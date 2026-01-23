@@ -23,6 +23,10 @@ The **Advantech WISE Devices System Log Analyzer** is a web-based tool designed 
   - **CSV Export:** Export parsed logs to CSV for further analysis.
   - **Visual Aids:** "Show Disconnection Flow" diagram for WiFi troubleshooting.
 
+## Docs and Links
+-   Original project: https://github.com/jim6501/Advantech-WISE-Devices-System-Log-Analyzer
+-   Project demo: https://jim6501.github.io/Advantech-WISE-Devices-System-Log-Analyzer/
+
 ## Usage
 1.  Open `index.html` in a modern web browser (Chrome, Edge, Firefox).
 2.  Select the target **Product Series** from the dropdown menu (e.g., "WISE-4000 (WiFi)").

@@ -73,6 +73,20 @@ header p {
     align-items: center;
 }
 
+/* Version Tag */
+.version {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--bg-secondary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
 .modal-content {
     position: relative;
     background-color: var(--card-bg);
@@ -406,16 +420,7 @@ tr:hover {
     text-align: left;
 }
 
-max-width: 300px;
-/* Increased width */
-font-size: 0.8rem;
-line-height: 1.4;
-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-z-index: 1000;
-/* Ensure high z-index */
-pointer-events: none;
-text-align: left;
-}
+
 
 .info-icon:hover::before {
     content: '';
