@@ -11,13 +11,12 @@ The **Advantech WISE Devices System Log Analyzer** is a web-based tool designed 
   - **LoRaWAN** (WISE-4610, WISE-2200, etc.)
   - **NB-IoT** (WISE-4471, WISE-4671)
   - **LAN** (Ethernet-based devices)
-- **Interactive UI:**
+- **Interactive UI:** 
   - **Drag & Drop Upload:** Easily load `.json` log files.
   - **Dark Mode Design:** Modern, high-contrast interface for better readability.
-  - **Smart Filtering:** Filter logs by Event Type (PE) or search by keyword.
 - **Advanced Parsing:**
   - Decodes generic and protocol-specific Payload Events (PE).
-  - **Intelligent Tooltips:** Displays context-aware information (e.g., "Manual Power Off" for PE 7).
+  - **Advanced Tooltips:** Displays context-aware information (e.g., "Manual Power Off" for PE 7).
   - **UID/MAC Display:** Prominently shows device identity at the top.
 - **Utilities:**
   - **CSV Export:** Export parsed logs to CSV for further analysis.
@@ -32,7 +31,7 @@ The **Advantech WISE Devices System Log Analyzer** is a web-based tool designed 
 2.  Select the target **Product Series** from the dropdown menu (e.g., "WISE-4000 (WiFi)").
 3.  **Upload a Log File:**
     - Click the "Click to choose or Drag & drop" area to select a file.
-    - Or drag a `.json` or `.txt` log file directly into the zone.
+    - Or drag a `.json` log file directly into the zone.
 4.  **Analyze Data:**
     - View the parsed logs in the table.
     - Use the **Search** bar or **Event Type** dropdown to narrow down results.
