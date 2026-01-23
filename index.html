@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WISE System Log Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>WISE System Log Analyzer <span class="version">v0.1</span></h1>
+            <p>Parse and analyze system logs for WISE-4000, 2000, and 4600 series.</p>
+        </header>
+
+        <main>
+            <div class="toolbar-container">
+                <div class="controls-area">
+                    <div class="control-group">
+                        <label for="product-series">Product Series</label>
+                        <select id="product-series">
+                            <option value="wifi">WISE-4000/4200 (WiFi)</option>
+                            <option value="nbiot">WISE-4671/4471 (NB-IoT)</option>
+                            <option value="lora">LoRa (WISE-4610/WISE-2200-M)</option>
+                            <option value="lan">WISE-4000/LAN</option>
+                        </select>
+                    </div>
+
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-content">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            <p id="drop-zone-text">Click or Drag log file</p>
+                        </div>
+                    </div>
+                    <input type="file" id="file-input" accept=".json,.txt" style="display: none;">
+
+
+
+                </div>
+
+                <div class="actions-area">
+                    <button id="export-btn" class="btn primary" disabled>Export CSV</button>
+                    <button id="show-flow-btn" class="btn secondary">Show Disconnection
+                        Flow</button>
+                    <button id="clear-btn" class="btn secondary" disabled>Clear</button>
+                </div>
+            </div>
+
+            <!-- Image Modal -->
+            <div id="image-modal" class="modal hidden">
+                <div class="modal-content">
+                    <span id="close-modal" class="close">&times;</span>
+                    <img id="modal-image" src="" alt="Disconnection Flow">
+                    <p class="modal-caption">WISE-4000 Disconnection Flow</p>
+                </div>
+            </div>
+
+
+
+            <div id="filter-area" class="filter-area hidden">
+                <input type="text" id="search-filter" placeholder="Search logs...">
+                <select id="event-type-filter">
+                    <option value="all">All Event Types</option>
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+
+            <div class="uid-display-container hidden" id="uid-display-container">
+                <span class="uid-label">Device UID:</span> <span id="device-uid" class="uid-value"></span>
+                <span class="separator">|</span>
+                <span class="uid-label">MAC:</span> <span id="device-mac" class="uid-value"></span>
+            </div>
+
+            <div class="table-container">
+                <table id="log-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Timestamp</th>
+                            <th>Event Type (PE)</th>
+                            <th>Description</th>
+                            <th>Details</th>
+                            <th>Raw Record</th>
+                            <th>Info</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+                <div id="empty-state" class="empty-state">
+                    <p>No logs loaded yet.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="parser.js"></script>
+    <script src="parsers/wifi_parser.js"></script>
+    <script src="parsers/lan_parser.js"></script>
+    <script src="parsers/nbiot_parser.js"></script>
+    <script src="parsers/lora_parser.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

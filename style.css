@@ -1,0 +1,432 @@
+:root {
+    --primary-color: #0070d2;
+    --primary-hover: #005fb8;
+    --bg-color: #1a1b1e;
+    --card-bg: #25262b;
+    --text-color: #c1c2c5;
+    --text-secondary: #909296;
+    --border-color: #373a40;
+    --header-bg: #101113;
+    --header-text: #ffffff;
+    --accent-color: #10b981;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --radius: 0.5rem;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--header-text);
+    margin-bottom: 0.5rem;
+}
+
+header p {
+    color: var(--text-secondary);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    /* Stay in place */
+    z-index: 1000;
+    /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    /* Full width */
+    height: 100%;
+    /* Full height */
+    overflow: auto;
+    /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black w/ opacity */
+    backdrop-filter: blur(5px);
+}
+
+.modal.show {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    position: relative;
+    background-color: var(--card-bg);
+    margin: auto;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    width: 90%;
+    /* Increased from 80% */
+    max-width: 1350px;
+    /* Increased from 900px (~1.5x) */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.modal-content img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.close {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close:hover,
+.close:focus {
+    color: var(--text-primary);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-caption {
+    margin-top: 15px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Controls */
+.toolbar-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    align-items: stretch;
+    /* Make heights equal */
+}
+
+.controls-area {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-end;
+    flex: 1;
+    /* Allow it to grow */
+}
+
+.actions-area {
+    background: var(--card-bg);
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    /* Center buttons vertically */
+    justify-content: center;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-group.buttons-row {
+    flex-direction: row;
+    align-items: flex-end;
+    /* Align with bottom of inputs */
+    gap: 1rem;
+}
+
+.control-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+select,
+input[type="text"] {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    background-color: #2c2e33;
+    color: var(--text-color);
+    min-width: 200px;
+}
+
+.file-label {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.2s;
+    text-align: center;
+    min-width: 180px;
+}
+
+.file-label:hover {
+    background-color: var(--primary-hover);
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.2s;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn.primary {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn.secondary {
+    background-color: var(--text-secondary);
+    color: white;
+}
+
+/* Drop Zone */
+/* Drop Zone (Compact) */
+.drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius);
+    padding: 0.5rem 1rem;
+    /* Compact padding */
+    text-align: center;
+    background-color: #2c2e33;
+    transition: all 0.2s;
+    margin-bottom: 0;
+    /* Remove bottom margin */
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    min-width: 200px;
+    /* Minimal width to look good */
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: var(--primary-color);
+    background-color: #25262b;
+}
+
+.drop-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.drop-content svg {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    /* Remove vertical spacing */
+}
+
+.drop-content p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Table Area */
+.filter-area {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    justify-content: space-between;
+}
+
+.table-container {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+th,
+td {
+    padding: 0.75rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: #2c2e33;
+    font-weight: 600;
+    color: var(--text-color);
+    position: sticky;
+    top: 0;
+}
+
+tr:hover {
+    background-color: #2c2e33;
+}
+
+.raw-record {
+    font-family: monospace;
+    color: #a5d8ff;
+    font-size: 0.85rem;
+}
+
+.empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.hidden {
+    display: none;
+}
+
+.log-info {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* Info Icon & Tooltip */
+.info-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: help;
+    position: relative;
+}
+
+.info-icon:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    /* Allow wrapping */
+    width: max-content;
+    max-width: 250px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    pointer-events: none;
+    text-align: left;
+}
+
+.info-icon:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    /* Position to the left of the icon */
+    right: 110%;
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+    left: auto;
+    margin-right: 8px;
+    /* Spacing */
+    margin-bottom: 0;
+
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    width: max-content;
+    max-width: 300px;
+    /* Increased width */
+    font-size: 0.8rem;
+    line-height: 1.4;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    /* Ensure high z-index */
+    pointer-events: none;
+    text-align: left;
+}
+
+max-width: 300px;
+/* Increased width */
+font-size: 0.8rem;
+line-height: 1.4;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+z-index: 1000;
+/* Ensure high z-index */
+pointer-events: none;
+text-align: left;
+}
+
+.info-icon:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    /* Align arrow to right side center of 20px icon */
+    right: 6px;
+    left: auto;
+    transform: none;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+    z-index: 1000;
+}
