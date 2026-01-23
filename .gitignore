@@ -17,3 +17,6 @@ Thumbs.db
 # Build
 dist/
 build/
+
+# Tools
+extract_doc_content.py
