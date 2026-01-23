@@ -434,4 +434,17 @@ tr:hover {
     border-style: solid;
     border-color: #333 transparent transparent transparent;
     z-index: 1000;
+    z-index: 1000;
+}
+
+
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 2rem 0;
+    margin-top: auto;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border-color);
 }
