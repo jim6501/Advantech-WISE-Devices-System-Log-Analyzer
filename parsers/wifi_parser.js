@@ -162,7 +162,7 @@
                     const ip1 = parseInt(record.substring(2, 4), 16);
                     const ip2 = parseInt(record.substring(4, 6), 16);
                     const ip3 = parseInt(record.substring(6, 8), 16);
-                    return `IP acquired. IP Data: ${ip3}.${ip2}.${ip1}`;
+                    return `IP acquired. IP Data: ${ip1}.${ip2}.${ip3}`;
                 case 0x0A: return `WLAN RF reset. Result: ${otherBytes}`;
                 case 0x0B: return `Push connection fail. Error: ${otherBytes}`;
                 case 0x0C: return `Upload connection fail. Error: ${otherBytes}`;
