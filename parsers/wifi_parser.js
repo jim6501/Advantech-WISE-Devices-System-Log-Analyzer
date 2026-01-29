@@ -50,7 +50,17 @@
                             return { description, details, info: "Continuation of previous Disconnect Info event" };
                         }
                     }
-                    details = this.parseWifiEvent(record, index, allLogs);
+                    const res = this.parseWifiEvent(record, index, allLogs);
+                    if (typeof res === 'object') {
+                        details = res.text;
+                        if (res.info) {
+                            // If info provided, return it
+                            return { description, details, info: res.info };
+                        }
+                    } else {
+                        // Fallback for string
+                        details = res;
+                    }
                     break;
                 case 13:
                     description = "Config Table Error";
@@ -138,11 +148,14 @@
             const byte3 = parseInt(record.substring(0, 2), 16);
             const otherBytes = record.substring(2);
 
+            let text = "";
+            let info = null;
+
             switch (byte3) {
-                case 0x01: return `WLAN disconnect. Reason: ${otherBytes}`;
-                case 0x02: return `Unexpected event. Code: ${otherBytes}`;
-                case 0x03: return `Unexpected socket. Code: ${otherBytes}`;
-                case 0x04: return `Tx socket failed. Socket:${record.substring(2, 4)}, Reason:${record.substring(4)}`;
+                case 0x01: text = `WLAN disconnect. Reason: ${otherBytes}`; break;
+                case 0x02: text = `Unexpected event. Code: ${otherBytes}`; break;
+                case 0x03: text = `Unexpected socket. Code: ${otherBytes}`; break;
+                case 0x04: text = `Tx socket failed. Socket:${record.substring(2, 4)}, Reason:${record.substring(4)}`; break;
                 case 0x05:
                     // Disconnect info.
                     // Byte 2: Profile[0], Byte 1: Priority, Byte 0: Name len
@@ -150,50 +163,72 @@
                     const priority = parseInt(record.substring(4, 6), 16);
                     const nameLen = parseInt(record.substring(6, 8), 16);
 
-                    return `Disconnect Info. Profile:${profile}, Priority:${priority}, Len:${nameLen}`;
+                    text = `Disconnect Info. Profile:${profile}, Priority:${priority}, Len:${nameLen}`;
+                    break;
                 case 0x06:
                     const rssi = parseInt(record.substring(2, 4), 16);
                     const oldLvl = parseInt(record.substring(4, 6), 16);
                     const newLvl = parseInt(record.substring(6, 8), 16);
-                    return `RSSI Change. Level: ${rssi}, Old: ${oldLvl}, New: ${newLvl}`;
-                case 0x07: return `RSSI Histogram. Data: ${otherBytes}`;
-                case 0x08: return `Unexpected WLAN policy. Policy:${record.substring(2, 4)}`;
+                    text = `RSSI Change. Level: ${rssi}, Old: ${oldLvl}, New: ${newLvl}`;
+                    break;
+                case 0x07: text = `RSSI Histogram. Data: ${otherBytes}`; break;
+                case 0x08: text = `Unexpected WLAN policy. Policy:${record.substring(2, 4)}`; break;
                 case 0x09:
                     const ip1 = parseInt(record.substring(2, 4), 16);
                     const ip2 = parseInt(record.substring(4, 6), 16);
                     const ip3 = parseInt(record.substring(6, 8), 16);
-                    return `IP acquired. IP Data: ${ip1}.${ip2}.${ip3}`;
-                case 0x0A: return `WLAN RF reset. Result: ${otherBytes}`;
-                case 0x0B: return `Push connection fail. Error: ${otherBytes}`;
-                case 0x0C: return `Upload connection fail. Error: ${otherBytes}`;
-                case 0x0D: return `MQTT connection fail. Error: ${otherBytes}`;
-                case 0x0E: return `Device RF fatal error. Sender:${record.substring(2, 4)}, Status:${record.substring(4)}`;
-                case 0x0F: return `Device RF abort error. Type:${record.substring(2, 4)}, Data:${record.substring(4)}`;
+                    text = `IP acquired. IP Data: ${ip1}.${ip2}.${ip3}`;
+                    break;
+                case 0x0A: text = `WLAN RF reset. Result: ${otherBytes}`; break;
+                case 0x0B: text = `Push connection fail. Error: ${otherBytes}`; break;
+                case 0x0C: text = `Upload connection fail. Error: ${otherBytes}`; break;
+                case 0x0D: text = `MQTT connection fail. Error: ${otherBytes}`; break;
+                case 0x0E:
+                    const errCode = otherBytes.toLowerCase();
+                    if (errCode === "0bffad") {
+                        text = "Device RF fatal error (0BFFAD)";
+                        info = "The error code 0bffad is defined as DHCP Server related. It is recommended that the customer use the BSSID binding feature to lock the device to a specific AP MAC address. This is particularly useful in environments where multiple APs share the same SSID, as it prevents the WISE device from roaming to a different AP and causing DHCP IP assignment issues.";
+                    } else if (errCode === "05ff93") {
+                        text = "Device RF fatal error (05FF93)";
+                        info = "The error code 05ff93 is defined as a wrong password issue. The primary recommendation is to first verify the stability of the signal strength to prevent the device from being repeatedly disconnected by the AP, which would cause instability between the WISE device and the AP requiring RF Reset actions. This will also help avoid the occasional occurrence of the 05ff93 error.";
+                    } else if (errCode === "05ff9a") {
+                        text = "Device RF fatal error (05FF9A)";
+                        info = "The error code 05ff9a causes connection instability. Currently, the only solution is to use the FW workaround mechanism. This mechanism primarily involves the FW automatically performing an RF Reset when the device experiences a disconnection (as shown in Flowchart 3-1). If the device is unable to re-establish a connection with the AP, a Reboot Interval can be configured (as shown in Flowcharts 3-2 & 4). When the system enters a System Reboot, it serves as the final software defense line. (Generally, regardless of whether the reboot is triggered manually by power cycling or by the system, the WISE device will have a more stable connection with the AP after the reboot.)";
+                    } else {
+                        text = `Device RF fatal error. Sender:${record.substring(2, 4)}, Status:${record.substring(4)}`;
+                    }
+                    break;
+                case 0x0F: text = `Device RF abort error. Type:${record.substring(2, 4)}, Data:${record.substring(4)}`; break;
                 case 0x10:
                     const pErr = parseInt(record.substring(2, 4), 16);
-                    return `Check ping error. Type:${pErr === 1 ? 'None' : (pErr === 2 ? 'Data error' : pErr)}, GatewayIP:${record.substring(6)}`; // Byte 0
-                case 0x11: return `Net config error`;
-                case 0x12: return `Connection list full`;
-                case 0x13: return `Reboot interval timeout`;
+                    text = `Check ping error. Type:${pErr === 1 ? 'None' : (pErr === 2 ? 'Data error' : pErr)}, GatewayIP:${record.substring(6)}`; // Byte 0
+                    break;
+                case 0x11: text = `Net config error`; break;
+                case 0x12: text = `Connection list full`; break;
+                case 0x13: text = `Reboot interval timeout`; break;
                 case 0x14:
                     const sType = parseInt(record.substring(2, 4), 16);
                     const sTypeMap = { 1: "Modbus", 2: "Cloud", 3: "SNTP", 4: "UDPCFG", 5: "P2P", 6: "WebServer" };
-                    return `Socket connect. Type:${sTypeMap[sType] || sType}, ID:${record.substring(6)}`;
-                case 0x15: return `Socket disconnect`;
+                    text = `Socket connect. Type:${sTypeMap[sType] || sType}, ID:${record.substring(6)}`;
+                    break;
+                case 0x15: text = `Socket disconnect`; break;
                 case 0x16:
                     const wMode = parseInt(record.substring(2, 4), 16);
                     const wAction = parseInt(record.substring(4, 6), 16);
                     const wModeMap = { 1: "Disassociate", 2: "Ping" };
                     const wActMap = { 0: "Reset", 1: "Reboot", 2: "Re-associate" };
-                    return `RF WDT. Mode:${wModeMap[wMode] || wMode}, Action:${wActMap[wAction] || wAction}`;
-                case 0x17: return `RF callback event. Code:${record.substring(2, 4)}`;
+                    text = `RF WDT. Mode:${wModeMap[wMode] || wMode}, Action:${wActMap[wAction] || wAction}`;
+                    break;
+                case 0x17: text = `RF callback event. Code:${record.substring(2, 4)}`; break;
                 case 0x18:
                     const mCode = parseInt(record.substring(4, 6), 16); // Byte 0
-                    return `RF module msg. Code:${record.substring(2, 4)}, Status:${mCode === 1 ? 'Timeout' : (mCode === 2 ? 'Failure' : mCode)}`;
-                case 0x19: return `RF module WiFi event. ID:${record.substring(2, 6)}`;
+                    text = `RF module msg. Code:${record.substring(2, 4)}, Status:${mCode === 1 ? 'Timeout' : (mCode === 2 ? 'Failure' : mCode)}`;
+                    break;
+                case 0x19: text = `RF module WiFi event. ID:${record.substring(2, 6)}`; break;
                 default:
-                    return `Event Code 0x${byte3.toString(16).toUpperCase().padStart(2, '0')}. Data: ${otherBytes}`;
+                    text = `Event Code 0x${byte3.toString(16).toUpperCase().padStart(2, '0')}. Data: ${otherBytes}`;
             }
+            return { text: text, info: info };
         },
 
         parseConfigError: function (record) {
