@@ -125,7 +125,7 @@
                 11: "Firmware Upgrade\nRecords a firmware update event with version details."
             },
             wifi: {
-                15: "WiFi Event\nDetailed status change for Wireless module (Connect/Disconnect/RSSI)."
+
             },
             lora: {
                 // Add LoRa specific event descriptions here

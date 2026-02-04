@@ -64,16 +64,16 @@ System Logging Event Table (PE Mapping)
 | 6 | SNTP Status | 0: No error, 1: DNS error, 2: No socket, 3: No reply, 4: Socket fatal |
 | 7 | Power Action | 1: Power on, 2: System restart, 3: Power off, 4: CoreTask WDT timeout |
 | 8 | Memory Full/Overwrite | 1: IO full, 2: IO overwrite, 3: System overwrite |
-| 9 | Remote Access Fail | IP address of the rejected access attempt 20 |
-| 10 | Login Error | IP address associated with the failed login 21 |
-| 11 | FW Upgrade | Upgraded firmware version string 22 |
-| 12 | RTC Battery Low | Internal Real-Time Clock battery voltage is low 23 |
+| 9 | Remote Access Fail | IP address of the rejected access attempt |
+| 10 | Login Error | IP address associated with the failed login |
+| 11 | FW Upgrade | Upgraded firmware version string |
+| 12 | RTC Battery Low | Internal Real-Time Clock battery voltage is low |
 | 13 | Config Table Error | Error items indicated by bit order (0-16) (Bit Order: 0:Device Info, 1:WiFi, 2:Network, 3:Access Control, 4:IO, 5:Modbus 0X, 6:Modbus 4X, 7:User Account, 8:Internal Buffer, 9:Analog Cal, 10:IO Log, 11:Cloud, 12:File Upload, 13:Private Server, 14:System Log, 15:Internal Buffer, 16:Tag Setting.) |
-| 14 | Internal Flash Error | Error accessing internal flash memory 25 |
+| 14 | Internal Flash Error | Error accessing internal flash memory |
 | 15 | WiFi Event | Detailed Event ID (0x01~0x19). Includes Disconnect reasons, RSSI changes, IP acquired, Ping errors, and Socket connections |
 | 16 | P2P Status | 1: Access control error, 2: Password error, 3: No QOS ACK . |
-| 17 | Webserver Utility | Byte 3: Index (0x01: Delete user, 0x02: List full); Bytes 0-2: IP 26 |
-| 18 | HW Error | Byte 3: 1 indicates I2C failure 27 |
+| 17 | Webserver Utility | Byte 3: Index (0x01: Delete user, 0x02: List full); Bytes 0-2: IP |
+| 18 | HW Error | Byte 3: 1 indicates I2C failure |
 
 Detailed WiFi Event Table (PE 15)
 
@@ -81,31 +81,31 @@ When PE is 15 on a Wi-Fi device, the Record is parsed using Byte 3 as the event 
 
 | Byte 3 (Hex) | Description | Data Detail (Bytes 2, 1, 0) |
 | --- | --- | --- |
-| 0x01 | WLAN disconnect event | Reason code of WiFi module18. |
+| 0x01 | WLAN disconnect event | Reason code of WiFi module. |
 | 0x02 | Unexpected event | Event code of WiFi module. |
 | 0x03 | Unexpected socket | Event code of WiFi module. |
-| 0x04 | Tx socket failed | Byte 2: Socket ID; Byte 1-0: Reason19. |
+| 0x04 | Tx socket failed | Byte 2: Socket ID; Byte 1-0: Reason. |
 | 0x05 | Disconnect info | First Log: Byte 2: Profile[0], Byte 1: Priority, Byte 0: Name length . Second Log (Secondary bytes): Bytes 3-0: SSID content . Byte 3: SSID[0] Byte 2: SSID[1] Byte 1: SSID[2] Byte 30: SSID[3] |
-| 0x06 | RSSI level change | Byte 2: RSSI; Byte 1: Old level; Byte 0: New level21. |
+| 0x06 | RSSI level change | Byte 2: RSSI; Byte 1: Old level; Byte 0: New level. |
 | 0x07 | RSSI Histogram | First Log: Byte 2-0: RSSI_His[0] to [2]. Second Log (Secondary bytes): Bytes 2-0: RSSI_His[3] to [5]. |
-| 0x08 | Unexpected WLAN policy | Byte 2: Policy; Byte 1-0: 023. |
-| 0x09 | IP acquired | Byte 2-0: Acquired IP address24. |
-| 0x0A | WLAN RF reset | Byte 2-0: Result code25. |
-| 0x0B | Push connection fail | Error code for server connection (Push)26. |
+| 0x08 | Unexpected WLAN policy | Byte 2: Policy; Byte 1-0: 0. |
+| 0x09 | IP acquired | Byte 2-0: Acquired IP address. |
+| 0x0A | WLAN RF reset | Byte 2-0: Result code. |
+| 0x0B | Push connection fail | Error code for server connection (Push). |
 | 0x0C | Upload connection fail | Error code for server connection (Upload). |
-| 0x0D | MQTT connection fail | Error code for server connection (MQTT)27. |
-| 0x0E | Device RF fatal error | Byte 2: Sender; Byte 1-0: Status28. |
-| 0x0F | Device RF abort error | Byte 2: AbortType; Byte 1-0: AbortData29. |
-| 0x10 | Check ping error | Byte 2: 1:None, 2:Data error; Byte 0: Gateway IP30. |
-| 0x11 | Net config error | Fixed value 031. |
-| 0x12 | Connection list full | Fixed value 0 (excludes webserver)32. |
-| 0x13 | Reboot interval timeout | Fixed value 033. |
-| 0x14 | Socket connect | Byte 2: Type (1:Modbus, 2:Cloud, 3:SNTP, 4: UDPCFG, 5:P2P, 6: WebServer ); Byte 0: Socket ID34. |
+| 0x0D | MQTT connection fail | Error code for server connection (MQTT). |
+| 0x0E | Device RF fatal error | Byte 2: Sender; Byte 1-0: Status. |
+| 0x0F | Device RF abort error | Byte 2: AbortType; Byte 1-0: AbortData. |
+| 0x10 | Check ping error | Byte 2: 1:None, 2:Data error; Byte 0: Gateway IP. |
+| 0x11 | Net config error | Fixed value 0. |
+| 0x12 | Connection list full | Fixed value 0 (excludes webserver). |
+| 0x13 | Reboot interval timeout | Fixed value 0. |
+| 0x14 | Socket connect | Byte 2: Type (1:Modbus, 2:Cloud, 3:SNTP, 4: UDPCFG, 5:P2P, 6: WebServer ); Byte 0: Socket ID. |
 | 0x15 | Socket disconnect | Socket closure event. |
-| 0x16 | RF WDT | Byte 2: WDT Mode(1: Disassociate, 2:Ping); Byte 1: Action (0:Reset, 1:Reboot, 2:Re-associate)35. |
-| 0x17 | RF callback event | Byte 2: Event code36. |
-| 0x18 | RF module message | Byte 2-1: Message code; Byte 0: 1:Timeout, 2:Failure37. |
-| 0x19 | RF module WiFi event | Byte 2-1: Event ID; Byte 0: 038. |
+| 0x16 | RF WDT | Byte 2: WDT Mode(1: Disassociate, 2:Ping); Byte 1: Action (0:Reset, 1:Reboot, 2:Re-associate). |
+| 0x17 | RF callback event | Byte 2: Event code. |
+| 0x18 | RF module message | Byte 2-1: Message code; Byte 0: 1:Timeout, 2:Failure. |
+| 0x19 | RF module WiFi event | Byte 2-1: Event ID; Byte 0: 0. |
 
 3. WISE-4000/LAN Series
 
@@ -113,26 +113,26 @@ For WISE-4000/LAN modules, the PE field determines the category of the log entry
 
 | PE | Description | Record Parsing Logic |
 | --- | --- | --- |
-| 1 | TCP Connection | Byte 3-2: Type (00: TCP); Byte 1: Error item; Byte 0: Content3. |
-| 2 | Reserved | No data recorded 4. |
-| 3 | Communication WDT | Communication Watchdog Timer event 5. |
-| 4 | Cloud File Upload | 1 (Connect server error), 2 (Upload data fail) . |
-| 5 | Cloud Data Push | 1 (Connect error), 2 (Push IO fail), 3 (Push System fail) |
-| 6 | SNTP | 0: No error, 1: DNS error, 2: No socket, 3: No reply, 4: Socket fatal, Other: NTP time 8. |
-| 7 | Power Action | 1: Power on, 2: System restart, 3: Power off 9. |
-| 8 | Log Memory State | 1: IO full, 2: IO overwrite, 3: System overwrite 10. |
-| 9 | Remote Access Fail | IP address of the rejected access attempt 11. |
-| 10 | Login Error | IP address of the failed login attempt 12. |
-| 11 | FW Upgrade | Upgraded firmware version string 13. Ex: A1.00 B01 => 0A100B01 |
+| 1 | TCP Connection | Byte 3-2: Type (00: TCP); Byte 1: Error item; Byte 0: Content. |
+| 2 | Reserved | No data recorded. |
+| 3 | Communication WDT | Communication Watchdog Timer event. |
+| 4 | Cloud File Upload | 1 (Connect server error), 2 (Upload data fail). |
+| 5 | Cloud Data Push | 1 (Connect error), 2 (Push IO fail), 3 (Push System fail). |
+| 6 | SNTP | 0: No error, 1: DNS error, 2: No socket, 3: No reply, 4: Socket fatal, Other: NTP time. |
+| 7 | Power Action | 1: Power on, 2: System restart, 3: Power off. |
+| 8 | Log Memory State | 1: IO full, 2: IO overwrite, 3: System overwrite. |
+| 9 | Remote Access Fail | IP address of the rejected access attempt. |
+| 10 | Login Error | IP address of the failed login attempt. |
+| 11 | FW Upgrade | Upgraded firmware version string. Ex: A1.00 B01 => 0A100B01 |
 | 12 | RTC Battery Low | Internal Real-Time Clock battery voltage is low. |
-| 13 | Config Table Error | Error items indicated by bit order (See Section 3) 15. |
-| 14 | Flash Access Error | Internal flash memory access error 16. |
-| 15 | Reserved | No data recorded for LAN series 17. |
-| 16 | Reserved | No data recorded for LAN series 18. |
+| 13 | Config Table Error | Error items indicated by bit order (See Section 3). |
+| 14 | Flash Access Error | Internal flash memory access error. |
+| 15 | Reserved | No data recorded for LAN series. |
+| 16 | Reserved | No data recorded for LAN series. |
 
 TLS Handshake Failure Table (PE 1)
 
-When PE is 1 and Byte 1 is 0 (Embed TLS failure), Byte 0 indicates the specific handshake failure step24.
+When PE is 1 and Byte 1 is 0 (Embed TLS failure), Byte 0 indicates the specific handshake failure step.
 
 | Byte 0 (Hex) | Handshake Step | Byte 0 (Hex) | Handshake Step |
 | --- | --- | --- | --- |
@@ -173,15 +173,15 @@ The following table provides the complete list of all 17 bits defined for the co
 
 System Log Event Table (PE Mapping)
 
-The PE field identifies the category of the recorded event and dictates how the Record field should be parsed 10.
+The PE field identifies the category of the recorded event and dictates how the Record field should be parsed.
 
 | PE | Event Description | Record Parsing Logic |
 | --- | --- | --- |
-| 1 | Cellular Info | Records modem initialization, registration status, and RF resets (See Section 3)11. |
+| 1 | Cellular Info | Records modem initialization, registration status, and RF resets (See Section 3). |
 | 2 | Cellular CME Error | Error codes refer to specific AT Command manuals. WISE-4471: Error codes refer to SARA-R4_ATCommands_(UBX-17003787_R08) WISE-4671: Error codes refer to BG96_AT_Commands_Manual_V2.3, |
-| 3 | Communication WDT | Communication Watchdog Timer events 13. |
-| 4 | Cloud File Upload | Byte 3, 2: Index (0: I/O, 1: System); Byte 1, 0: Error code 14. |
-| 5 | Cloud Data Push | Byte 3, 2: Index (0: I/O, 1: System); Byte 1, 0: Error code 15. |
+| 3 | Communication WDT | Communication Watchdog Timer events. |
+| 4 | Cloud File Upload | Byte 3, 2: Index (0: I/O, 1: System); Byte 1, 0: Error code. |
+| 5 | Cloud Data Push | Byte 3, 2: Index (0: I/O, 1: System); Byte 1, 0: Error code. |
 | 6 | Cellular CMS Error | Error codes refer to specific AT Command manuals. WISE-4471: Error codes refer to SARA-R4_ATCommands_(UBX-17003787_R08), WISE-4671: Error codes refer to BG96_AT_Commands_Manual_V2.3, |
 | 7 | Power Action | 1: Power on, 2: System restart, 3: Power off. |
 | 8 | Memory Status | 1: IO full, 2: IO overwrite, 3: System overwrite. |
@@ -189,68 +189,68 @@ The PE field identifies the category of the recorded event and dictates how the 
 | 10 | Remote Access Fail | Displays the last 6 digits of the phone number. |
 | 11 | FW Upgrade | Upgraded firmware version string (e.g., A1.00 B01) . Ex: A1.00 B01 => 0A100B01 |
 | 12 | Battery | Detailed battery voltage and temperature status (See Section 4) . |
-| 13 | Internal Config Error | Error items defined by bit order (See Section 5) 23. |
-| 14 | Internal Flash Error | Error accessing internal flash memory 24. |
-| 15 | Reserved | No data recorded 25. |
-| 16 | Reserved | No data recorded 26. |
+| 13 | Internal Config Error | Error items defined by bit order (See Section 5). |
+| 14 | Internal Flash Error | Error accessing internal flash memory. |
+| 15 | Reserved | No data recorded. |
+| 16 | Reserved | No data recorded. |
 
 Cellular Information Details (PE 1)
 
-When the PE value is 1, the Record string identifies the specific state of the cellular modem and network registration2.
+When the PE value is 1, the Record string identifies the specific state of the cellular modem and network registration.
 
 | Code (No.) | Description / Event Status |
 | --- | --- |
-| 1 | Modem Initial failed: The cellular modem failed to initialize properly3. |
-| 2 | Get PIN status failed: The device could not retrieve the SIM PIN status4. |
-| 3 | Set packet data protocol failed: PDP context configuration failed5. |
-| 4 | Set SMS service center address failed: SMSC address configuration error6. |
-| 5 | Registered: The device has successfully registered to the home network7. |
-| 6 | Not registered: MT is not currently searching for an operator8. |
-| 7 | RF reset: A reset command was issued to the RF module9. |
-| 8 | RF module reset: The physical RF hardware module has been reset10. |
-| 9 | Unregistered timeout: Registration was lost due to a timeout11. |
-| 10 | RF module not respond: The RF hardware is not responding to commands12. |
-| 11 | Attempting Registration: Not registered, but currently searching or trying to attach13. |
-| 12 | Registration denied: The network has explicitly denied the registration request14. |
-| 13 | CEREG: Unknown: Registration status is unknown (Refer to 3GPP TS 27.007)15. |
-| 14 | Registered, roaming: The device is registered but on a roaming network16. |
-| 15 | RF module manufacturer error: An internal error reported by the RF module hardware17. |
+| 1 | Modem Initial failed: The cellular modem failed to initialize properly. |
+| 2 | Get PIN status failed: The device could not retrieve the SIM PIN status. |
+| 3 | Set packet data protocol failed: PDP context configuration failed. |
+| 4 | Set SMS service center address failed: SMSC address configuration error. |
+| 5 | Registered: The device has successfully registered to the home network. |
+| 6 | Not registered: MT is not currently searching for an operator. |
+| 7 | RF reset: A reset command was issued to the RF module. |
+| 8 | RF module reset: The physical RF hardware module has been reset. |
+| 9 | Unregistered timeout: Registration was lost due to a timeout. |
+| 10 | RF module not respond: The RF hardware is not responding to commands. |
+| 11 | Attempting Registration: Not registered, but currently searching or trying to attach. |
+| 12 | Registration denied: The network has explicitly denied the registration request. |
+| 13 | CEREG: Unknown: Registration status is unknown (Refer to 3GPP TS 27.007). |
+| 14 | Registered, roaming: The device is registered but on a roaming network. |
+| 15 | RF module manufacturer error: An internal error reported by the RF module hardware. |
 
 Battery and Charging Status (PE 12)
 
-Note: For the WISE-4471, only event code 0 (RTC battery low) is supported28.
+Note: For the WISE-4471, only event code 0 (RTC battery low) is supported.
 
 | No. | Error Item / Event Description |
 | --- | --- |
-| 0 | RTC battery low 29 |
-| 1 | Battery low 30 |
-| 2 | Over-Temperature detected in Charge condition 31 |
-| 3 | Over-Temperature detected in Discharge condition 32 |
-| 4 | Internal Short is detected 33 |
-| 5 | Full-charged condition reached 34 |
+| 0 | RTC battery low |
+| 1 | Battery low |
+| 2 | Over-Temperature detected in Charge condition |
+| 3 | Over-Temperature detected in Discharge condition |
+| 4 | Internal Short is detected |
+| 5 | Full-charged condition reached |
 
 Internal Configuration Error Bit Order (PE 13)
 
-When the PE value is 13, the Record field is a hexadecimal value that must be converted to binary. Each bit represents a specific section of the device configuration2.
+When the PE value is 13, the Record field is a hexadecimal value that must be converted to binary. Each bit represents a specific section of the device configuration.
 
 | Bit | Error Item | Description |
 | --- | --- | --- |
-| 0 | Device information | Errors in general device identification data3. |
-| 1 | Cellular setting | Errors in NB-IoT/LTE-M network parameters4. |
-| 2 | User account setting | Errors in login credentials or permission levels5. |
-| 3 | Access control setting | Errors in IP white-list or access restrictions6. |
-| 4 | IO setting | Errors in digital/analog input or output parameters7. |
-| 5 | DI counter | Errors in Digital Input counter configurations8. |
-| 6 | IO log setting | Errors in the I/O data logging configuration9. |
-| 7 | Cloud setting | Errors in cloud platform connection parameters10. |
-| 8 | File upload setting | Errors in FTP/HTTP file upload configurations11. |
-| 9 | Private server setting | Errors in custom private server endpoint settings12. |
-| 10 | System log setting | Errors in the system logging configuration itself13. |
-| 11 | Last address | Errors in the recorded last memory/network address14. |
-| 12 | RS-485 | Errors in the RS-485 serial communication settings15. |
-| 13 | Modbus RTU | Errors in the Modbus RTU protocol configuration16. |
-| 14 | System mark | Errors in internal system state markers17. |
-| 15 | Paas setting | Errors in Platform-as-a-Service integration settings18. |
+| 0 | Device information | Errors in general device identification data. |
+| 1 | Cellular setting | Errors in NB-IoT/LTE-M network parameters. |
+| 2 | User account setting | Errors in login credentials or permission levels. |
+| 3 | Access control setting | Errors in IP white-list or access restrictions. |
+| 4 | IO setting | Errors in digital/analog input or output parameters. |
+| 5 | DI counter | Errors in Digital Input counter configurations. |
+| 6 | IO log setting | Errors in the I/O data logging configuration. |
+| 7 | Cloud setting | Errors in cloud platform connection parameters. |
+| 8 | File upload setting | Errors in FTP/HTTP file upload configurations. |
+| 9 | Private server setting | Errors in custom private server endpoint settings. |
+| 10 | System log setting | Errors in the system logging configuration itself. |
+| 11 | Last address | Errors in the recorded last memory/network address. |
+| 12 | RS-485 | Errors in the RS-485 serial communication settings. |
+| 13 | Modbus RTU | Errors in the Modbus RTU protocol configuration. |
+| 14 | System mark | Errors in internal system state markers. |
+| 15 | Paas setting | Errors in Platform-as-a-Service integration settings. |
 
 4. WISE-4610 / WISE-2410 / WISE-2200-M LoRaWAN Series
 
@@ -280,10 +280,10 @@ Bytes 0–2 (Restart Cause): Triggered when Byte 3 is 213:
 
 | Value | Restart Cause | Value | Restart Cause |
 | --- | --- | --- | --- |
-| 1 | F/W image load complete 14 | 5 | Restart from LoRaWAN downlink 15 |
-| 2 | RESTful Restart command 16 | 6 | Power detected during low battery 17 |
-| 3 | LoRa configurations changed 18 | 7 | ASCII restart command 19 |
-| 4 | RESTful Reset to Default 20 | 8 | I/O connector pin test complete 21 |
+| 1 | F/W image load complete | 5 | Restart from LoRaWAN downlink |
+| 2 | RESTful Restart command | 6 | Power detected during low battery |
+| 3 | LoRa configurations changed | 7 | ASCII restart command |
+| 4 | RESTful Reset to Default | 8 | I/O connector pin test complete |
 
 Battery Information Table (PE 12)
 
@@ -327,19 +327,19 @@ Byte 3 = 1 (Reset to Default Cause)
 
 Internal Flash Access Error (PE 14)
 
-When a flash access error occurs, use the value in Byte 3 of the Record field to identify the event type, then interpret Bytes 0–2 according to that event2:
+When a flash access error occurs, use the value in Byte 3 of the Record field to identify the event type, then interpret Bytes 0–2 according to that event:
 
 | Byte 3 (Event) | Operation / Event Description | Bytes 0–2 (Content Description) |
 | --- | --- | --- |
-| 1 | Read | The specific Memory Address where the read operation failed3. |
-| 2 | Write | The specific Memory Address where the write operation failed4. |
-| 3 | Length | The Length of data that the system attempted to process5. |
-| 4 | Error Length | The Error Length detected during the operation6. |
-| 5 | Protect Address | The Protected Memory Address that caused an access violation7. |
-| 6 | Erase | The Memory Address where the erase operation failed8. |
-| 7 | Erase Size | The size of the sector being erased: 0: 32K, 1: 4K, 2: 64K9. |
-| 8 | Erase Protect Address | The Protected Address triggered during an erase operation10. |
-| 9 | Out of Sector | The Memory Address that was determined to be out of valid sector bounds11. |
+| 1 | Read | The specific Memory Address where the read operation failed. |
+| 2 | Write | The specific Memory Address where the write operation failed. |
+| 3 | Length | The Length of data that the system attempted to process. |
+| 4 | Error Length | The Error Length detected during the operation. |
+| 5 | Protect Address | The Protected Memory Address that caused an access violation. |
+| 6 | Erase | The Memory Address where the erase operation failed. |
+| 7 | Erase Size | The size of the sector being erased: 0: 32K, 1: 4K, 2: 64K. |
+| 8 | Erase Protect Address | The Protected Address triggered during an erase operation. |
+| 9 | Out of Sector | The Memory Address that was determined to be out of valid sector bounds. |
 
 RF Event Primary Index (PE 15)
 
@@ -347,13 +347,13 @@ The following table defines the specific category of the RF event based on the v
 
 | Byte 3 (Hex) | Event Description | Data Detail (Byte 2, 1, 0) |
 | --- | --- | --- |
-| 01 | Join fail | Fixed value 000000222. |
-| 02 | RF initial fail | Fixed value 000000333. |
-| 03 | Connect fail | Byte 2-0: Status Code . |
-| 04 | LoRaWAN Stack Events | Byte 2-0: Stack Event Code (Refer to LoRaWAN Stack Event Codes)5. |
-| 05 | MAC Command | Header: Cmd ID + Param 1-2.  Log 2+: Remaining Params. (Refer to MAC Command Reference)6. |
+| 01 | Join fail | Fixed value 000000. |
+| 02 | RF initial fail | Fixed value 000000. |
+| 03 | Connect fail | Byte 2-0: Status Code. |
+| 04 | LoRaWAN Stack Events | Byte 2-0: Stack Event Code (Refer to LoRaWAN Stack Event Codes). |
+| 05 | MAC Command | Header: Cmd ID + Param 1-2.  Log 2+: Remaining Params. (Refer to MAC Command Reference). |
 | 06 | Frame Counter (Fcnt) | Byte 2: 01: Uplink, 02: Downlink, 03: Difference; Byte 1-0: Value. |
-| 07 | Error Event | Byte 2: Event Category; Byte 1-0: Status Code8. |
+| 07 | Error Event | Byte 2: Event Category; Byte 1-0: Status Code. |
 | 08 | Send Error | Same mapping logic as Byte 3 = 07. |
 | 09 | Downlink Frame | Header: FC, Seq, Len. Log 2+: Raw Payload (3 bytes/log). (Refer to Downlink Frame Structure) |
 | 0x0A | Data Rate Change | Byte 1: Original Data Rate; Byte 0: New Data Rate (0–6). |
@@ -362,11 +362,11 @@ LoRaWAN Stack Event Codes (Byte 3 = 04)
 
 | Code (Hex) | Description | Code (Hex) | Description |
 | --- | --- | --- | --- |
-| 000000 (0) | Connected 12 | 000007 (7) | Rx done 13 |
-| 000001 (1) | Disconnected 14 | 000008 (8) | Rx timeout 15 |
-| 000003 (3) | Tx timeout 16 | 000009 (9) | Rx error 17 |
-| 000004 (4) | Tx error (Retries exhausted) 18 | 00000A (10) | Join failure 19 |
-| 000006 (6) | Tx scheduling error 20 | 00000C (12) | Automatic uplink error 21 |
+| 000000 (0) | Connected | 000007 (7) | Rx done |
+| 000001 (1) | Disconnected | 000008 (8) | Rx timeout |
+| 000003 (3) | Tx timeout | 000009 (9) | Rx error |
+| 000004 (4) | Tx error (Retries exhausted) | 00000A (10) | Join failure |
+| 000006 (6) | Tx scheduling error | 00000C (12) | Automatic uplink error |
 
 MAC Command Detail Table (PE 15, Byte 3 = 0x05)
 

@@ -47,7 +47,7 @@
                             const ssid = window.parser.utils.hexToAscii(record);
                             details = `Disconnect Info (SSID) SSID: "${ssid}"`;
                             // Return early with specific info
-                            return { description, details, info: "Continuation of previous Disconnect Info event" };
+                            return { description, details };
                         }
                     }
                     const res = this.parseWifiEvent(record, index, allLogs);
@@ -170,6 +170,7 @@
                     const oldLvl = parseInt(record.substring(4, 6), 16);
                     const newLvl = parseInt(record.substring(6, 8), 16);
                     text = `RSSI Change. Level: ${rssi}, Old: ${oldLvl}, New: ${newLvl}`;
+                    info = `RSSI Indicators from Old: ${oldLvl} changed to New: ${newLvl}`;
                     break;
                 case 0x07: text = `RSSI Histogram. Data: ${otherBytes}`; break;
                 case 0x08: text = `Unexpected WLAN policy. Policy:${record.substring(2, 4)}`; break;
@@ -196,16 +197,20 @@
                         info = "The error code 05ff9a causes connection instability. Currently, the only solution is to use the FW workaround mechanism. This mechanism primarily involves the FW automatically performing an RF Reset when the device experiences a disconnection (as shown in Flowchart 3-1). If the device is unable to re-establish a connection with the AP, a Reboot Interval can be configured (as shown in Flowcharts 3-2 & 4). When the system enters a System Reboot, it serves as the final software defense line. (Generally, regardless of whether the reboot is triggered manually by power cycling or by the system, the WISE device will have a more stable connection with the AP after the reboot.)";
                     } else {
                         text = `Device RF fatal error. Sender:${record.substring(2, 4)}, Status:${record.substring(4)}`;
+                        info = "Refer to File Server's RF Fatal Error Log Analysis and Handling Method (FAQ_WISE-4000 System Log RF Fatal Error Analysis and Handling Scheme)";
                     }
                     break;
-                case 0x0F: text = `Device RF abort error. Type:${record.substring(2, 4)}, Data:${record.substring(4)}`; break;
+                case 0x0F: text = `Device RF abort error. (${record.substring(4)})`; break;
                 case 0x10:
                     const pErr = parseInt(record.substring(2, 4), 16);
-                    text = `Check ping error. Type:${pErr === 1 ? 'None' : (pErr === 2 ? 'Data error' : pErr)}, GatewayIP:${record.substring(6)}`; // Byte 0
+                    text = `Check ping error. GatewayIP:${record.substring(6)}`; // Byte 0
+                    info = "Refer to step 2-1 of the disconnection flowchart: Generate a Ping Error log (WISE failed to ping the GW).";
                     break;
                 case 0x11: text = `Net config error`; break;
                 case 0x12: text = `Connection list full`; break;
-                case 0x13: text = `Reboot interval timeout`; break;
+                case 0x13: text = `Reboot interval timeout`;
+                    info = "Refer to step 3-3 of the Disconnection Flowchart: WISE FW instructs the MCU to perform an RF Reset at intervals of 15s, 30s, ... < N min. (Simultaneously, the system determines if the RF Reset Time has reached the manually configured N min limit.)";
+                    break;
                 case 0x14:
                     const sType = parseInt(record.substring(2, 4), 16);
                     const sTypeMap = { 1: "Modbus", 2: "Cloud", 3: "SNTP", 4: "UDPCFG", 5: "P2P", 6: "WebServer" };

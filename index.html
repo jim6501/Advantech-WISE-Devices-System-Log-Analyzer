@@ -22,7 +22,7 @@
                     <div class="control-group">
                         <label for="product-series">Product Series</label>
                         <select id="product-series">
-                            <option value="wifi">WISE-4000/4200 (WiFi)</option>
+                            <option value="wifi">WISE-4000/4200 (Wi-Fi)</option>
                             <option value="nbiot">WISE-4671/4471 (NB-IoT)</option>
                             <option value="lora">LoRa (WISE-4610/WISE-2200-M)</option>
                             <option value="lan">WISE-4000/LAN</option>
@@ -74,6 +74,28 @@
                 </select>
             </div>
 
+            <!-- Highlight Controls -->
+            <div id="highlight-area" class="highlight-area hidden">
+                <div class="highlight-controls">
+                    <select id="highlight-type">
+                        <option value="eventType">Event Type (PE)</option>
+                        <option value="details">Details</option>
+                    </select>
+                    <input type="text" id="highlight-input" list="highlight-suggestions"
+                        placeholder="Value to highlight...">
+                    <datalist id="highlight-suggestions">
+                        <!-- Populated dynamically -->
+                    </datalist>
+                    <button id="add-highlight-btn" class="btn secondary">Add Highlight</button>
+                    <button id="clear-highlight-btn" class="btn secondary"
+                        style="background-color: var(--text-secondary); opacity: 0.8;">Clear All</button>
+                    <span id="highlight-error" class="error-msg hidden">Max 5 items reached!</span>
+                </div>
+                <div id="highlight-tags" class="highlight-tags">
+                    <!-- Tags will appear here -->
+                </div>
+            </div>
+
             <div class="uid-display-container hidden" id="uid-display-container">
                 <span class="uid-label">Device UID:</span> <span id="device-uid" class="uid-value"></span>
                 <span class="separator">|</span>
@@ -105,7 +127,7 @@
         </main>
 
         <footer>
-            <p>WISE System Log Analyzer v0.1</p>
+            <p>WISE System Log Analyzer v0.3</p>
         </footer>
     </div>
 

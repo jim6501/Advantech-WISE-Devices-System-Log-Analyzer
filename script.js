@@ -157,6 +157,128 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTable();
     }
 
+    // --- Highlighting Logic ---
+    let activeHighlights = []; // Format: { type: 'eventType'|'description', value: '...', colorIndex: 0-4 }
+    const MAX_HIGHLIGHTS = 5;
+
+    const highlightArea = document.getElementById('highlight-area');
+    const highlightTypeSelect = document.getElementById('highlight-type');
+    const highlightInput = document.getElementById('highlight-input');
+    const addHighlightBtn = document.getElementById('add-highlight-btn');
+    const clearHighlightBtn = document.getElementById('clear-highlight-btn');
+    const highlightTagsContainer = document.getElementById('highlight-tags');
+    const highlightErrorMsg = document.getElementById('highlight-error');
+    const highlightSuggestions = document.getElementById('highlight-suggestions');
+
+    addHighlightBtn.addEventListener('click', addHighlight);
+    clearHighlightBtn.addEventListener('click', clearHighlights);
+    highlightTypeSelect.addEventListener('change', updateHighlightSuggestions);
+    // Bind enter key on input
+    highlightInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addHighlight();
+    });
+
+    function clearHighlights() {
+        activeHighlights = [];
+        highlightErrorMsg.classList.add('hidden');
+        renderHighlightsUI();
+        renderTable();
+    }
+
+
+    function addHighlight() {
+        const type = highlightTypeSelect.value;
+        let value = highlightInput.value.trim();
+
+        if (!value) return;
+
+        // If type is PE, user might select "15: WiFi Event". Extract "15".
+        // Regex looks for "Number: " at start? Or just split by ":"
+        if (type === 'eventType') {
+            const match = value.match(/^(\d+):/);
+            if (match) {
+                value = match[1];
+            }
+        }
+
+        if (activeHighlights.length >= MAX_HIGHLIGHTS) {
+            highlightErrorMsg.classList.remove('hidden');
+            return;
+        }
+
+        // Check duplicate
+        if (activeHighlights.some(h => h.type === type && h.value.toLowerCase() === value.toLowerCase())) {
+            alert('This highlight already exists!');
+            return;
+        }
+
+        activeHighlights.push({
+            type: type,
+            value: value,
+            colorIndex: activeHighlights.length
+        });
+
+        highlightInput.value = '';
+        highlightErrorMsg.classList.add('hidden');
+        renderHighlightsUI();
+        renderTable();
+    }
+
+    // Expose remove function globally or bind in render
+    window.removeHighlight = function (index) {
+        activeHighlights.splice(index, 1);
+        highlightErrorMsg.classList.add('hidden');
+        renderHighlightsUI();
+        renderTable();
+    };
+
+    function renderHighlightsUI() {
+        highlightTagsContainer.innerHTML = '';
+        activeHighlights.forEach((h, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'highlight-tag';
+            tag.classList.add(`row-highlight-${index}`);
+
+            tag.innerHTML = `
+                <span>${h.type === 'eventType' ? 'PE' : 'Details'}: ${h.value}</span>
+                <span class="remove-btn" onclick="window.removeHighlight(${index})">×</span>
+            `;
+            highlightTagsContainer.appendChild(tag);
+        });
+    }
+
+    function updateHighlightSuggestions() {
+        const type = highlightTypeSelect.value;
+        const suggestions = new Set();
+
+        if (type === 'eventType') {
+            // Create map of PE -> Description
+            const peMap = {};
+            currentLogs.forEach(log => {
+                if (!peMap[log.eventType]) {
+                    peMap[log.eventType] = log.description; // Capture first description found
+                }
+            });
+
+            // Format: "15: WiFi Event"
+            Object.keys(peMap).sort((a, b) => a - b).forEach(pe => {
+                suggestions.add(`${pe}: ${peMap[pe]}`);
+            });
+
+        } else if (type === 'details') {
+            currentLogs.forEach(log => {
+                if (log.details) suggestions.add(log.details);
+            });
+        }
+
+        highlightSuggestions.innerHTML = '';
+        Array.from(suggestions).sort().forEach(val => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            highlightSuggestions.appendChild(opt);
+        });
+    }
+
     function updateEventFilters(logs) {
         const types = new Set(logs.map(l => l.eventType));
         eventTypeFilter.innerHTML = '<option value="all">All Event Types</option>';
@@ -166,6 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = type; // You might want to map PE number to name here if easier
             eventTypeFilter.appendChild(option);
         });
+
+        // Also update highlight suggestions
+        updateHighlightSuggestions();
+        // Show highlight area
+        highlightArea.classList.remove('hidden');
     }
 
     function renderTable() {
@@ -189,6 +316,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             filteredLogs.forEach((log, index) => {
                 const tr = document.createElement('tr');
+
+                // Check Highlighting
+                // We re-calculate colorIndex based on current activeHighlights order
+                activeHighlights.forEach((h, hIndex) => {
+                    let match = false;
+                    if (h.type === 'eventType') {
+                        // Compare as string/number loose match
+                        if (String(log.eventType) === String(h.value)) match = true;
+                    } else if (h.type === 'details') {
+                        if (log.details.toLowerCase().includes(h.value.toLowerCase())) match = true;
+                    }
+
+                    if (match) {
+                        tr.classList.add(`row-highlight-${hIndex}`);
+                        // Priority? Last one wins or first one? CSS will execute in order. 
+                        // But usually we just want one color. The loop continues, so later tags might overwrite if !important used? 
+                        // Yes, !important is in CSS. So multiple classes => last one defined in CSS wins or last applied?
+                        // Let's assume one match is typical.
+                    }
+                });
+
                 const infoCell = log.info
                     ? `<span class="info-icon" data-tooltip="${log.info.replace(/"/g, '&quot;')}">!</span>`
                     : '';
@@ -253,5 +401,58 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         showFlowBtn.disabled = true;
     }
+
+    // --- Global Tooltip Implementation ---
+    const tooltip = document.createElement('div');
+    tooltip.className = 'global-tooltip';
+    document.body.appendChild(tooltip);
+
+    // Event Delegation for Tooltips
+    document.addEventListener('mouseover', (e) => {
+        if (e.target.classList.contains('info-icon')) {
+            const text = e.target.getAttribute('data-tooltip');
+            if (text) {
+                tooltip.textContent = text;
+                tooltip.style.display = 'block';
+
+                const iconRect = e.target.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+
+                // Default: Position to the right, top aligned with icon
+                let top = iconRect.top;
+                let left = iconRect.right + 10; // 10px gap
+
+                // Check if it fits on the right
+                if (left + tooltipRect.width > window.innerWidth - 20) {
+                    // Flip to left
+                    left = iconRect.left - tooltipRect.width - 10;
+                }
+
+                // Check if it fits on the bottom (vertical check)
+                // If it goes off screen bottom, move it up
+                if (top + tooltipRect.height > window.innerHeight - 10) {
+                    top = window.innerHeight - tooltipRect.height - 10;
+                }
+                // Check top boundary (unlikely with top-alignment strategy unless icon is off screen, but good to have)
+                if (top < 10) {
+                    top = 10;
+                }
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+            }
+        }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        if (e.target.classList.contains('info-icon')) {
+            tooltip.style.display = 'none';
+        }
+    });
+
+    // Remove tooltip on scroll to prevent detached floating
+    window.addEventListener('scroll', () => {
+        tooltip.style.display = 'none';
+    }, true); // Capture phase to catch table scrolls
 
 });
