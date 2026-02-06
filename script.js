@@ -59,8 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
             showFlowBtn.disabled = true;
         }
 
-        // Clear results on switch
-        clearBtn.click();
+        // IMPROVEMENT: Re-parse existing logs instead of clearing
+        if (currentRawLogs && currentRawLogs.length > 0) {
+            processLogs(currentRawLogs);
+        } else {
+            // Clear results on switch if nothing loaded
+            clearBtn.click();
+        }
     });
 
     // Show Flow Button Click
@@ -124,6 +129,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (json.LogMsg && Array.isArray(json.LogMsg)) {
                     currentRawLogs = json.LogMsg;
+
+                    // Auto-Detect Product Series based on UID
+                    if (currentRawLogs.length > 0 && currentRawLogs[0].UID) {
+                        const uid = currentRawLogs[0].UID.toUpperCase();
+                        let detected = null;
+
+                        if (uid.includes('WISE-4610') || uid.includes('WISE-2200') || uid.includes('WISE-2410')) {
+                            detected = 'lora';
+                        } else if (uid.includes('WISE-4671') || uid.includes('WISE-4471')) {
+                            detected = 'nbiot';
+                        } else if (uid.includes('WISE-4000/LAN')) {
+                            detected = 'lan';
+                        } else if (uid.includes('WISE-40') || uid.includes('WISE-42')) {
+                            // Default to wifi for 4000/4200, unless explicitly LAN
+                            detected = 'wifi';
+                        }
+
+                        if (detected) {
+                            productSeriesSelect.value = detected;
+                            // Trigger change event to update UI states (like flow button)
+                            productSeriesSelect.dispatchEvent(new Event('change'));
+                        }
+                    }
+
                     processLogs(json.LogMsg);
                     exportBtn.disabled = false;
                     clearBtn.disabled = false;

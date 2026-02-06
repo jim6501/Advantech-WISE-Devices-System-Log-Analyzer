@@ -44,10 +44,6 @@
                         details = `Status: ${memMap[val] || val}`;
                     }
                     break;
-                case 13:
-                    description = "Config Table Error";
-                // Uses same bit order as WiFi usually, or Section 3 specific
-                // Doc says "See Section 3". Section 3 has "Internal Configuration Error Bit Order (PE 13)"
                 case 11:
                     description = "FW Upgrade";
                     {
@@ -55,14 +51,14 @@
                         const b2 = parseInt(record.substring(2, 4), 16);
                         const b1 = parseInt(record.substring(4, 6), 16);
                         const b0 = parseInt(record.substring(6, 8), 16);
-                        
+
                         const majorLet = b3.toString(16).toUpperCase();
                         const verMaj = (b2 >> 4).toString(16);
                         const verMinHigh = (b2 & 0x0F).toString(16);
                         const verMinLow = (b1 >> 4).toString(16);
                         const typeLet = (b1 & 0x0F).toString(16).toUpperCase();
                         const build = b0.toString(16).toUpperCase().padStart(2, '0');
-                        
+
                         details = `Version: ${majorLet}${verMaj}.${verMinHigh}${verMinLow} ${typeLet}${build}`;
                     }
                     break;
