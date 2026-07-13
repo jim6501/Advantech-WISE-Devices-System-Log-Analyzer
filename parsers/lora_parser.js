@@ -7,8 +7,7 @@
             switch (pe) {
                 case 1:
                     description = "Wireless Connection";
-                    // details = `Data: ${record}`;
-                    details = `Wireless Connection`;
+                    details = `Raw Data: ${record}`;
                     break;
                 case 7:
                     description = "Power On/Off";
@@ -129,15 +128,40 @@
                         details = `Module: ${moduleName}, Error Details: ${errDetails}`;
                     }
                     break;
-                default:
-                    const simpleMap = {
-                        8: "Memory Status",
-                        14: "Flash Error"
-                    };
-                    if (simpleMap[pe]) {
-                        description = simpleMap[pe];
-                        details = `Data: ${record}`;
+                case 8:
+                    description = "Memory Status";
+                    {
+                        const statusVal = parseInt(record, 16);
+                        const statusMap = {
+                            1: "IO full",
+                            2: "IO overwrite",
+                            3: "System overwrite"
+                        };
+                        details = `Status: ${statusMap[statusVal] || statusVal} (Raw: ${record})`;
                     }
+                    break;
+                case 14:
+                    description = "Flash Error";
+                    {
+                        const eventType = parseInt(record.substring(0, 2), 16);
+                        const dataContent = record.substring(2);
+                        const dataVal = parseInt(dataContent, 16);
+                        const eventMap = {
+                            1: "Read", 2: "Write", 3: "Length", 4: "Error Length",
+                            5: "Protect Address", 6: "Erase", 7: "Erase Size",
+                            8: "Erase Protect Address", 9: "Out of Sector"
+                        };
+                        const eventDesc = eventMap[eventType] || `Unknown (${eventType})`;
+                        if (eventType === 7) {
+                            const sizeMap = { 0: "32K", 1: "4K", 2: "64K" };
+                            details = `Operation: ${eventDesc}, Size: ${sizeMap[dataVal] || dataVal} (Raw: ${record})`;
+                        } else {
+                            details = `Operation: ${eventDesc}, Data/Address: 0x${dataContent} (Raw: ${record})`;
+                        }
+                    }
+                    break;
+                default:
+                    details = `Data: ${record}`;
             }
             return { description, details };
         },
