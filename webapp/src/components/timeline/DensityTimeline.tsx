@@ -193,9 +193,6 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
           {dots.map((d, i) => {
             const color = peColorMap.get(d.event.eventType);
             const dimmed = activeHighlights.size > 0 && !activeHighlights.has(d.event.eventType);
-            // Clock-reset dots get an amber ring so they stand out even when dimmed.
-            const stroke = d.clockReset ? '#f59e0b' : d.dense ? 'none' : 'var(--card-bg)';
-            const strokeWidth = d.clockReset ? 2 : d.dense ? 0 : 1.5;
             return (
               <circle
                 key={i}
@@ -204,8 +201,8 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
                 r={d.r}
                 fill={color?.dot ?? '#8a8a86'}
                 fillOpacity={dimmed ? 0.2 : 0.9}
-                stroke={stroke}
-                strokeWidth={strokeWidth}
+                stroke={d.dense ? 'none' : 'var(--card-bg)'}
+                strokeWidth={d.dense ? 0 : 1.5}
                 style={{ cursor: 'pointer' }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => onSelectIndex(d.event.index)}
