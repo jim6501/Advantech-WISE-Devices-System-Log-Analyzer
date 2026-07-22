@@ -1,9 +1,8 @@
 import type { ColorSet, LogEvent } from '../types';
 
-// Fixed categorical palette — colors are assigned to PE values by first-appearance
-// order (never by selection order or PE numeric value), so the legend stays stable
-// regardless of what the user clicks. Beyond 8 distinct PEs, later ones fall back to
-// a neutral "other" gray rather than growing the palette indefinitely.
+// Fixed categorical palette — colors are assigned to PE values by a deterministic
+// hash of the PE value itself (never by first-appearance or selection order), so
+// a given PE always renders the same color across every file/session.
 export const PALETTE: ColorSet[] = [
   { dot: '#378add', bg: '#1c2733', text: '#85b7eb' },
   { dot: '#ba7517', bg: '#332a19', text: '#f0a93d' },
@@ -17,13 +16,19 @@ export const PALETTE: ColorSet[] = [
 
 export const OTHER_COLOR: ColorSet = { dot: '#8a8a86', bg: '#28282a', text: '#b5b5b0' };
 
+function peColorIndex(eventType: LogEvent['eventType']): number {
+  let hash = 0;
+  for (const ch of String(eventType)) {
+    hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  }
+  return Math.abs(hash) % PALETTE.length;
+}
+
 export function buildPeColorMap(events: LogEvent[]): Map<LogEvent['eventType'], ColorSet> {
   const map = new Map<LogEvent['eventType'], ColorSet>();
-  let paletteIndex = 0;
   for (const e of events) {
     if (!map.has(e.eventType)) {
-      map.set(e.eventType, paletteIndex < PALETTE.length ? PALETTE[paletteIndex] : OTHER_COLOR);
-      paletteIndex++;
+      map.set(e.eventType, PALETTE[peColorIndex(e.eventType)]);
     }
   }
   return map;
