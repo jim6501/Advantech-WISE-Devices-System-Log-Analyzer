@@ -42,7 +42,8 @@ export interface ColorSet {
   text: string;
 }
 
-export interface TimeRange {
+// Bounds are LogEvent.index values (recording-order sequence numbers), not timestamps.
+export interface IndexRange {
   start: number;
   end: number;
 }

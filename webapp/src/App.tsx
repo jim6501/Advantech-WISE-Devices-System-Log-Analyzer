@@ -10,27 +10,40 @@ import { Legend } from './components/legend/Legend';
 import { DensityTimeline } from './components/timeline/DensityTimeline';
 import { LogTable } from './components/table/LogTable';
 import { DisconnectionFlowModal } from './components/modal/DisconnectionFlowModal';
+import { CompareModal } from './components/modal/CompareModal';
 import { useSessions } from './hooks/useSessions';
 import { usePeColorMap } from './hooks/usePeColorMap';
 import { extractRawLogs } from './lib/normalizeLog';
 import { exportToCsv } from './lib/csvExport';
-import type { LogEvent, ProductSeries, TimeRange } from './types';
+import type { IndexRange, LogEvent, ProductSeries } from './types';
 
 function App() {
   const { sessions, activeSession, add, remove, setActive, reparseActive, clearAll } = useSessions();
 
   const [activeHighlights, setActiveHighlights] = useState<Set<LogEvent['eventType']>>(new Set());
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [timeRange, setTimeRange] = useState<TimeRange | null>(null);
+  const [indexRange, setIndexRange] = useState<IndexRange | null>(null);
   const [showFlowModal, setShowFlowModal] = useState(false);
+  const [compareIds, setCompareIds] = useState<Set<number>>(new Set());
+  const [showCompareModal, setShowCompareModal] = useState(false);
 
   // Reset per-file UI state whenever the active session changes, so filters from
   // one file never leak into another (spec 3.4).
   useEffect(() => {
     setActiveHighlights(new Set());
     setSelectedIndex(null);
-    setTimeRange(null);
+    setIndexRange(null);
   }, [activeSession?.id]);
+
+  // Drop any compare selections that no longer correspond to a loaded session
+  // (e.g. removed via the tab's × or Clear All), so the Compare button's count
+  // and the modal never reference a stale session.
+  useEffect(() => {
+    setCompareIds((prev) => {
+      const next = new Set([...prev].filter((id) => sessions.some((s) => s.id === id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [sessions]);
 
   const events = activeSession?.events ?? [];
   const peColorMap = usePeColorMap(events);
@@ -64,6 +77,15 @@ function App() {
     reparseActive(series);
   }
 
+  function toggleCompareId(id: number) {
+    setCompareIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   function handleExport() {
     if (!activeSession) return;
     exportToCsv(activeSession.fileName, activeSession.events, activeSession.metadata);
@@ -77,7 +99,21 @@ function App() {
       <div className="app-body">
         <aside className="sidebar">
           <Dropzone onFiles={handleFiles} />
-          {sessions.length > 0 && <FileTabs sessions={sessions} activeId={activeSession?.id ?? null} onSelect={setActive} onRemove={remove} />}
+          {sessions.length > 0 && (
+            <FileTabs
+              sessions={sessions}
+              activeId={activeSession?.id ?? null}
+              compareIds={compareIds}
+              onSelect={setActive}
+              onRemove={remove}
+              onToggleCompare={toggleCompareId}
+            />
+          )}
+          {sessions.length > 1 && (
+            <button className="btn" disabled={compareIds.size < 2} onClick={() => setShowCompareModal(true)}>
+              Compare ({compareIds.size})
+            </button>
+          )}
 
           {activeSession && <ProductSeriesSelect value={activeSession.series} disabled={!activeSession} onChange={handleSeriesChange} />}
           {activeSession && <UidPanel metadata={activeSession.metadata} />}
@@ -104,15 +140,15 @@ function App() {
                 events={events}
                 peColorMap={peColorMap}
                 activeHighlights={activeHighlights}
-                timeRange={timeRange}
-                onTimeRangeChange={setTimeRange}
+                indexRange={indexRange}
+                onIndexRangeChange={setIndexRange}
                 onSelectIndex={setSelectedIndex}
               />
               <LogTable
                 events={events}
                 peColorMap={peColorMap}
                 activeHighlights={activeHighlights}
-                timeRange={timeRange}
+                indexRange={indexRange}
                 selectedIndex={selectedIndex}
                 onSelectIndex={setSelectedIndex}
               />
@@ -126,6 +162,9 @@ function App() {
       </footer>
 
       {showFlowModal && <DisconnectionFlowModal onClose={() => setShowFlowModal(false)} />}
+      {showCompareModal && (
+        <CompareModal sessions={sessions.filter((s) => compareIds.has(s.id))} onClose={() => setShowCompareModal(false)} />
+      )}
     </div>
   );
 }

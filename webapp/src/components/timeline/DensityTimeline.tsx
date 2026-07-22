@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ColorSet, LogEvent, TimeRange } from '../../types';
+import type { ColorSet, IndexRange, LogEvent } from '../../types';
 import {
   buildTimelineLayout,
   formatBandLabel,
@@ -15,8 +15,8 @@ interface Props {
   events: LogEvent[];
   peColorMap: Map<LogEvent['eventType'], ColorSet>;
   activeHighlights: Set<LogEvent['eventType']>;
-  timeRange: TimeRange | null;
-  onTimeRangeChange: (range: TimeRange | null) => void;
+  indexRange: IndexRange | null;
+  onIndexRangeChange: (range: IndexRange | null) => void;
   onSelectIndex: (index: number) => void;
 }
 
@@ -26,7 +26,7 @@ function formatDate(ms: number): string {
   return new Date(ms).toLocaleString();
 }
 
-export function DensityTimeline({ events, peColorMap, activeHighlights, timeRange, onTimeRangeChange, onSelectIndex }: Props) {
+export function DensityTimeline({ events, peColorMap, activeHighlights, indexRange, onIndexRangeChange, onSelectIndex }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ startX: number; curX: number } | null>(null);
   // Falls back to the logical TIMELINE_WIDTH until the first real measurement lands,
@@ -55,29 +55,48 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
   // Once a range is selected, zoom the timeline itself to just that range (instead of
   // only filtering the table below) — otherwise a selection on a large dataset still
   // renders every other event's dot, which is the exact clutter the zoom is meant to
-  // fix. Clearing the selection (timeRange -> null) falls back to the full dataset.
+  // fix. Clearing the selection (indexRange -> null) falls back to the full dataset.
   const visibleEvents = useMemo(() => {
-    if (!timeRange) return events;
-    const filtered = events.filter((e) => e.timestampMs !== null && e.timestampMs >= timeRange.start && e.timestampMs <= timeRange.end);
+    if (!indexRange) return events;
+    const filtered = events.filter((e) => e.index >= indexRange.start && e.index <= indexRange.end);
     // Defensive fallback: never let the panel (and its "clear" button) disappear
     // entirely just because a filter edge case matched zero events.
     return filtered.length ? filtered : events;
-  }, [events, timeRange]);
+  }, [events, indexRange]);
 
   const layout = useMemo(() => buildTimelineLayout(visibleEvents, width), [visibleEvents, width]);
 
   if (!layout || events.length < MIN_EVENTS_TO_SHOW) return null;
 
-  const { tMin, tMax, span, bandMs, dots, xForT, clockResetMarkers } = layout;
+  const { iMin, iMax, bandSize, dots, xForIndex, clockResetMarkers, tStart, tEnd } = layout;
+
+  // Index -> nearest known timestamp, so the drag-selection label can show a real
+  // time alongside the index even though the dragged boundary rarely lands exactly
+  // on an event's index. Sorted once per layout for binary search.
+  const timeByIndex = [...dots].sort((a, b) => a.event.index - b.event.index);
+  function nearestTime(index: number): number | null {
+    if (!timeByIndex.length) return null;
+    let lo = 0;
+    let hi = timeByIndex.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (timeByIndex[mid].event.index < index) lo = mid + 1;
+      else hi = mid;
+    }
+    const candidates = [timeByIndex[lo]];
+    if (lo > 0) candidates.push(timeByIndex[lo - 1]);
+    candidates.sort((a, b) => Math.abs(a.event.index - index) - Math.abs(b.event.index - index));
+    return candidates[0].event.timestampMs;
+  }
 
   const bands: { x1: number; x2: number; shaded: boolean; label: string }[] = [];
   let idx = 0;
-  for (let t = tMin; t < tMax; t += bandMs) {
+  for (let i = iMin; i < iMax; i += bandSize) {
     bands.push({
-      x1: xForT(t),
-      x2: xForT(Math.min(t + bandMs, tMax)),
+      x1: xForIndex(i),
+      x2: xForIndex(Math.min(i + bandSize, iMax)),
       shaded: idx % 2 === 1,
-      label: formatBandLabel(t, bandMs),
+      label: formatBandLabel(i),
     });
     idx++;
   }
@@ -87,26 +106,29 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
     return clientX - rect.left;
   }
 
-  function svgXToTime(x: number): number {
+  function svgXToIndex(x: number): number {
     const usableW = width - TIMELINE_PAD_X * 2;
-    return tMin + Math.max(0, (x - TIMELINE_PAD_X) / usableW) * span;
+    const indexSpan = iMax - iMin;
+    return Math.round(iMin + Math.max(0, (x - TIMELINE_PAD_X) / usableW) * indexSpan);
   }
 
-  const previewRange: TimeRange | null = drag
+  const previewRange: IndexRange | null = drag
     ? {
-        start: svgXToTime(Math.min(drag.startX, drag.curX)),
-        end: svgXToTime(Math.max(drag.startX, drag.curX)),
+        start: svgXToIndex(Math.min(drag.startX, drag.curX)),
+        end: svgXToIndex(Math.max(drag.startX, drag.curX)),
       }
-    : timeRange;
+    : indexRange;
 
-  const displayRange = drag && Math.abs(drag.curX - drag.startX) > 5 ? previewRange : timeRange;
+  const displayRange = drag && Math.abs(drag.curX - drag.startX) > 5 ? previewRange : indexRange;
+  const displayStartMs = displayRange ? nearestTime(displayRange.start) : null;
+  const displayEndMs = displayRange ? nearestTime(displayRange.end) : null;
 
   return (
     <div className="timeline-panel">
       <p className="timeline-caption">
-        {timeRange
+        {indexRange
           ? `Zoomed to ${visibleEvents.length} of ${events.length} events — drag to narrow further, or clear to reset`
-          : 'Drag to select a time range — click a dot to jump to that row'}
+          : 'Drag to select a range — click a dot to jump to that row'}
       </p>
       <div
         className="timeline-wrap"
@@ -123,13 +145,13 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
           if (drag) {
             const dragWidth = Math.abs(drag.curX - drag.startX);
             if (dragWidth > 5) {
-              onTimeRangeChange({
-                start: svgXToTime(Math.min(drag.startX, drag.curX)),
-                end: svgXToTime(Math.max(drag.startX, drag.curX)),
+              onIndexRangeChange({
+                start: svgXToIndex(Math.min(drag.startX, drag.curX)),
+                end: svgXToIndex(Math.max(drag.startX, drag.curX)),
               });
-            } else if (timeRange) {
+            } else if (indexRange) {
               // plain click on empty space clears the current selection
-              onTimeRangeChange(null);
+              onIndexRangeChange(null);
             }
           }
           setDrag(null);
@@ -157,13 +179,15 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
           {/* RTC clock-reset markers — shown as dashed amber lines with a ⚠ label.
                Each marker represents a cluster of events whose timestamp jumped
                significantly backwards compared to the preceding recording sequence,
-               most likely caused by a device reboot with no battery-backed RTC. */}
+               most likely caused by a device reboot with no battery-backed RTC. The
+               x-axis itself is index-based so this never distorts dot positions —
+               it's purely an annotation that the timestamp may be unreliable. */}
           {clockResetMarkers.map((m, i) => (
             <g key={`rtc-${i}`} style={{ cursor: 'help' }}>
               <title>
                 {'Possible RTC reset — these events have timestamps earlier than the preceding records.\n' +
                   'This is typically caused by a device reboot where the real-time clock lost its setting.\n' +
-                  'The events are plotted at the time the device reported, which may not reflect actual occurrence.'}
+                  'The dot position (by recording index) is unaffected; only the displayed timestamp may be unreliable.'}
               </title>
               {/* dashed vertical guide line */}
               <line
@@ -208,7 +232,7 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
                 onClick={() => onSelectIndex(d.event.index)}
               >
                 <title>
-                  #{d.event.index} · {d.event.description} · {formatDate(d.event.timestampMs!)}
+                  #{d.event.index} · PE {d.event.eventType} · {d.event.description} · {formatDate(d.event.timestampMs!)}
                   {d.clockReset ? '\n⚠ Possible RTC reset — timestamp may be unreliable' : ''}
                 </title>
               </circle>
@@ -229,20 +253,27 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
         </svg>
       </div>
       <div className="timeline-range-labels">
-        <span>{formatDate(tMin)}</span>
+        <span>
+          #{iMin} · {formatDate(tStart)}
+        </span>
         <span className="timeline-sel-label">
-          {displayRange ? `${formatDate(displayRange.start)}  →  ${formatDate(displayRange.end)}` : ''}
-          {timeRange && !drag && (
+          {displayRange
+            ? `#${displayRange.start}${displayStartMs !== null ? ` · ${formatDate(displayStartMs)}` : ''}  →  ` +
+              `#${displayRange.end}${displayEndMs !== null ? ` · ${formatDate(displayEndMs)}` : ''}`
+            : ''}
+          {indexRange && !drag && (
             <button
               className="btn"
               style={{ display: 'inline', width: 'auto', marginLeft: 8, padding: '0 6px' }}
-              onClick={() => onTimeRangeChange(null)}
+              onClick={() => onIndexRangeChange(null)}
             >
               clear
             </button>
           )}
         </span>
-        <span>{formatDate(tMax)}</span>
+        <span>
+          #{iMax} · {formatDate(tEnd)}
+        </span>
       </div>
     </div>
   );

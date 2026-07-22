@@ -3,31 +3,27 @@ import type { LogEvent } from '../types';
 // Ported from prototype.html's renderTimeline layout logic (pickBandSize / bucketing /
 // dot offsetting), decoupled from DOM so it can be unit-driven and reused by the
 // DensityTimeline component and its tests.
+//
+// The x-axis is driven by each event's `index` (its position in the recording),
+// never by its timestamp. Device RTCs can reset mid-log (e.g. a power-cycle with
+// no battery backup), which makes timestamps jump backwards; a time-based axis
+// either collapses the whole span to a sliver or scatters events out of their
+// actual recording order. Index always increases monotonically by construction,
+// so plotting against it keeps every event in its true recorded sequence and the
+// spacing stable regardless of clock weirdness.
 
-const BAND_TARGETS_MS = [
-  60 * 1000,
-  5 * 60 * 1000,
-  15 * 60 * 1000,
-  30 * 60 * 1000,
-  60 * 60 * 1000,
-  3 * 60 * 60 * 1000,
-  6 * 60 * 60 * 1000,
-  24 * 60 * 60 * 1000,
-  7 * 24 * 60 * 60 * 1000,
-];
+const BAND_INDEX_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000];
 
-// Dynamically picks a band size targeting ~6-10 bands across the total span.
-export function pickBandSize(spanMs: number): number {
-  for (const target of BAND_TARGETS_MS) {
-    if (spanMs / target <= 10) return target;
+// Dynamically picks a band size (in index count) targeting ~6-10 bands across the total span.
+export function pickIndexBandSize(span: number): number {
+  for (const step of BAND_INDEX_STEPS) {
+    if (span / step <= 10) return step;
   }
-  return BAND_TARGETS_MS[BAND_TARGETS_MS.length - 1];
+  return BAND_INDEX_STEPS[BAND_INDEX_STEPS.length - 1];
 }
 
-export function formatBandLabel(ms: number, bandMs: number): string {
-  const d = new Date(ms);
-  if (bandMs >= 24 * 60 * 60 * 1000) return `${d.getMonth() + 1}/${d.getDate()}`;
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+export function formatBandLabel(index: number): string {
+  return `#${index}`;
 }
 
 export interface TimelineDot {
@@ -42,8 +38,8 @@ export interface TimelineDot {
   dense: boolean;
   // True when this event's timestamp is significantly earlier than the running max
   // seen so far in recording order — a strong signal that the device RTC was reset
-  // (e.g. after a power-cycle with no battery backup). The timeline still plots the
-  // dot at the timestamp the device reported, but the renderer should visually flag it.
+  // (e.g. after a power-cycle with no battery backup). This is purely an annotation
+  // now: it no longer affects where the dot is plotted (that's driven by index).
   clockReset: boolean;
   event: LogEvent;
 }
@@ -55,14 +51,17 @@ export interface ClockResetMarker {
 }
 
 export interface TimelineLayout {
-  tMin: number;
-  tMax: number;
-  span: number;
-  bandMs: number;
+  iMin: number;
+  iMax: number;
+  indexSpan: number;
+  bandSize: number;
   dots: TimelineDot[];
-  xForT: (ms: number) => number;
+  xForIndex: (index: number) => number;
   /** Distinct x-positions of detected RTC-reset clusters for warning annotation. */
   clockResetMarkers: ClockResetMarker[];
+  /** Timestamp of the first/last event in recording order, for the range labels. */
+  tStart: number;
+  tEnd: number;
 }
 
 const WIDTH = 900;
@@ -82,38 +81,36 @@ export function buildTimelineLayout(events: LogEvent[], width: number = WIDTH): 
   const withTime = events.filter((e) => e.timestampMs !== null) as (LogEvent & { timestampMs: number })[];
   if (!withTime.length) return null;
 
-  // Compute tMin/tMax by scanning all timestamps rather than assuming the array is
-  // sorted. Some files have a few out-of-order records at the tail (e.g. a device
-  // reboot that reset the RTC), which makes withTime[last].timestampMs < withTime[0]
-  // and collapses span to 1 000 ms — mapping every event to the same x-coordinate.
-  // We intentionally do NOT sort the array: preserving original recording order means
-  // out-of-order entries stay in their true sequence position; the timeline will show
-  // them at whatever timestamp the device reported, which is the honest representation.
-  const tMin = withTime.reduce((m, e) => Math.min(m, e.timestampMs), withTime[0].timestampMs);
-  const tMax = withTime.reduce((m, e) => Math.max(m, e.timestampMs), withTime[0].timestampMs);
-  const span = Math.max(tMax - tMin, 1000);
-  const bandMs = pickBandSize(span);
+  // index is a global unique sequence assigned in recording order, so the first and
+  // last entries define the span — no scanning for min/max needed the way timestamps
+  // required (and no risk of an out-of-order tail collapsing the span).
+  const iMin = withTime[0].index;
+  const iMax = withTime[withTime.length - 1].index;
+  const indexSpan = Math.max(iMax - iMin, 1);
+  const bandSize = pickIndexBandSize(indexSpan);
 
   const usableW = width - PAD_X * 2;
-  const xForT = (ms: number) => PAD_X + ((ms - tMin) / span) * usableW;
+  const xForIndex = (index: number) => PAD_X + ((index - iMin) / indexSpan) * usableW;
 
-  // Detect RTC resets: track the running maximum timestamp in recording order.
-  // If an event's timestamp is more than 1 minute behind the running max it is
-  // almost certainly caused by a device reboot with a battery-less RTC — the
-  // clock restarted from a stale value. We flag those events so the renderer can
-  // annotate them, while still plotting them at the timestamp the device reported.
+  // Detect RTC resets: compare each event's timestamp to the one immediately
+  // before it in recording order. If it's more than 1 minute earlier, that's
+  // almost certainly a device reboot with a battery-less RTC — the clock
+  // restarted from a stale value. Only the single event where the jump actually
+  // happens is flagged (not every subsequent event that also happens to still
+  // read earlier than the pre-reset high-water mark), so the warning marks one
+  // specific point rather than smearing across the whole post-reset run.
   const CLOCK_RESET_THRESHOLD_MS = 60 * 1000;
-  let runningMax = withTime[0].timestampMs;
-  const annotated = withTime.map((e) => {
-    const clockReset = e.timestampMs < runningMax - CLOCK_RESET_THRESHOLD_MS;
-    if (!clockReset) runningMax = Math.max(runningMax, e.timestampMs);
+  let prevMs = withTime[0].timestampMs;
+  const annotated = withTime.map((e, i) => {
+    const clockReset = i > 0 && e.timestampMs < prevMs - CLOCK_RESET_THRESHOLD_MS;
+    prevMs = e.timestampMs;
     return { ...e, clockReset };
   });
 
-  const bucketMs = span / BUCKET_COUNT;
+  const bucketSize = indexSpan / BUCKET_COUNT;
   const grouped = new Map<number, (typeof annotated)[number][]>();
   annotated.forEach((e) => {
-    const bucket = Math.round((e.timestampMs - tMin) / bucketMs);
+    const bucket = Math.round((e.index - iMin) / bucketSize);
     const list = grouped.get(bucket) ?? [];
     list.push(e);
     grouped.set(bucket, list);
@@ -121,7 +118,7 @@ export function buildTimelineLayout(events: LogEvent[], width: number = WIDTH): 
 
   const dots: TimelineDot[] = [];
   grouped.forEach((items) => {
-    const cx = xForT(items[0].timestampMs);
+    const cx = xForIndex(items[0].index);
     const n = items.length;
     const r = BASE_RADIUS + Math.min(n - 1, MAX_RADIUS_BONUS) * RADIUS_STEP;
     // Real logs can pack hundreds of events into a single bucket (e.g. a rapid
@@ -142,7 +139,17 @@ export function buildTimelineLayout(events: LogEvent[], width: number = WIDTH): 
   dots.forEach((d) => { if (d.clockReset) resetXSet.add(Math.round(d.x)); });
   const clockResetMarkers: ClockResetMarker[] = [...resetXSet].map((x) => ({ x }));
 
-  return { tMin, tMax, span, bandMs, dots, xForT, clockResetMarkers };
+  return {
+    iMin,
+    iMax,
+    indexSpan,
+    bandSize,
+    dots,
+    xForIndex,
+    clockResetMarkers,
+    tStart: withTime[0].timestampMs,
+    tEnd: withTime[withTime.length - 1].timestampMs,
+  };
 }
 
 export const TIMELINE_WIDTH = WIDTH;

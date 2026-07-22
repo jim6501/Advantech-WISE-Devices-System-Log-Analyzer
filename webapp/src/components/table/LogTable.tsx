@@ -1,6 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ColorSet, LogEvent, TimeRange } from '../../types';
+import type { ColorSet, IndexRange, LogEvent } from '../../types';
 import { countByPe, isRare, OTHER_COLOR } from '../../lib/peColors';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -8,14 +8,14 @@ interface Props {
   events: LogEvent[];
   peColorMap: Map<LogEvent['eventType'], ColorSet>;
   activeHighlights: Set<LogEvent['eventType']>;
-  timeRange: TimeRange | null;
+  indexRange: IndexRange | null;
   selectedIndex: number | null;
   onSelectIndex: (index: number) => void;
 }
 
 const ROW_HEIGHT = 36;
 
-export function LogTable({ events, peColorMap, activeHighlights, timeRange, selectedIndex, onSelectIndex }: Props) {
+export function LogTable({ events, peColorMap, activeHighlights, indexRange, selectedIndex, onSelectIndex }: Props) {
   const [search, setSearch] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState('all');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -27,7 +27,7 @@ export function LogTable({ events, peColorMap, activeHighlights, timeRange, sele
   const filtered = useMemo(() => {
     const searchLower = search.toLowerCase();
     return events.filter((e) => {
-      if (timeRange && e.timestampMs !== null && (e.timestampMs < timeRange.start || e.timestampMs > timeRange.end)) return false;
+      if (indexRange && (e.index < indexRange.start || e.index > indexRange.end)) return false;
       if (eventTypeFilter !== 'all' && String(e.eventType) !== eventTypeFilter) return false;
       if (searchLower) {
         const haystack = `${e.description} ${e.details} ${e.record}`.toLowerCase();
@@ -35,7 +35,7 @@ export function LogTable({ events, peColorMap, activeHighlights, timeRange, sele
       }
       return true;
     });
-  }, [events, timeRange, eventTypeFilter, search]);
+  }, [events, indexRange, eventTypeFilter, search]);
 
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,

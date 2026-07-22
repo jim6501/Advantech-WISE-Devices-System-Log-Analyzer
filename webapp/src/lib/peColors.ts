@@ -3,15 +3,17 @@ import type { ColorSet, LogEvent } from '../types';
 // Fixed categorical palette — colors are assigned to PE values by a deterministic
 // hash of the PE value itself (never by first-appearance or selection order), so
 // a given PE always renders the same color across every file/session.
+// Hues spaced ~40° apart around the wheel (skipping the 260-300° purple/violet
+// band) so adjacent palette entries stay visually distinct on the timeline.
 export const PALETTE: ColorSet[] = [
-  { dot: '#378add', bg: '#1c2733', text: '#85b7eb' },
-  { dot: '#ba7517', bg: '#332a19', text: '#f0a93d' },
-  { dot: '#1d9e75', bg: '#173028', text: '#5dcaa5' },
-  { dot: '#d4537e', bg: '#331c26', text: '#ed93b1' },
-  { dot: '#7f77dd', bg: '#232043', text: '#afa9ec' },
-  { dot: '#e24b4a', bg: '#331d1d', text: '#f09595' },
-  { dot: '#2fa8a3', bg: '#152e2d', text: '#7fd8d3' },
-  { dot: '#c9a227', bg: '#302a13', text: '#e8c95f' },
+  { dot: '#d9569a', bg: '#33202c', text: '#ef9dc0' }, // magenta (320°)
+  { dot: '#e2524f', bg: '#331e1d', text: '#f0989a' }, // red (0°)
+  { dot: '#e0862e', bg: '#332419', text: '#eebb7d' }, // orange (40°)
+  { dot: '#a3b52e', bg: '#2a2d17', text: '#d3dd8a' }, // chartreuse (80°)
+  { dot: '#2fa860', bg: '#17301f', text: '#7fd8a3' }, // green (120°)
+  { dot: '#1fa88a', bg: '#17302a', text: '#5dcab8' }, // teal (160°)
+  { dot: '#378add', bg: '#1c2733', text: '#85b7eb' }, // blue (200°)
+  { dot: '#5169d9', bg: '#1e2140', text: '#a3aef0' }, // indigo (240°)
 ];
 
 export const OTHER_COLOR: ColorSet = { dot: '#8a8a86', bg: '#28282a', text: '#b5b5b0' };
