@@ -40,7 +40,18 @@ export interface TimelineDot {
   // overlap and merge into a solid pale blob that hides the dots entirely — so the
   // renderer skips the stroke for these and lets the fills blend instead.
   dense: boolean;
+  // True when this event's timestamp is significantly earlier than the running max
+  // seen so far in recording order — a strong signal that the device RTC was reset
+  // (e.g. after a power-cycle with no battery backup). The timeline still plots the
+  // dot at the timestamp the device reported, but the renderer should visually flag it.
+  clockReset: boolean;
   event: LogEvent;
+}
+
+/** A position on the timeline where a clock-reset cluster was detected. */
+export interface ClockResetMarker {
+  /** x-pixel coordinate of the reset cluster on the canvas. */
+  x: number;
 }
 
 export interface TimelineLayout {
@@ -50,6 +61,8 @@ export interface TimelineLayout {
   bandMs: number;
   dots: TimelineDot[];
   xForT: (ms: number) => number;
+  /** Distinct x-positions of detected RTC-reset clusters for warning annotation. */
+  clockResetMarkers: ClockResetMarker[];
 }
 
 const WIDTH = 900;
@@ -69,17 +82,37 @@ export function buildTimelineLayout(events: LogEvent[], width: number = WIDTH): 
   const withTime = events.filter((e) => e.timestampMs !== null) as (LogEvent & { timestampMs: number })[];
   if (!withTime.length) return null;
 
-  const tMin = withTime[0].timestampMs;
-  const tMax = withTime[withTime.length - 1].timestampMs;
+  // Compute tMin/tMax by scanning all timestamps rather than assuming the array is
+  // sorted. Some files have a few out-of-order records at the tail (e.g. a device
+  // reboot that reset the RTC), which makes withTime[last].timestampMs < withTime[0]
+  // and collapses span to 1 000 ms — mapping every event to the same x-coordinate.
+  // We intentionally do NOT sort the array: preserving original recording order means
+  // out-of-order entries stay in their true sequence position; the timeline will show
+  // them at whatever timestamp the device reported, which is the honest representation.
+  const tMin = withTime.reduce((m, e) => Math.min(m, e.timestampMs), withTime[0].timestampMs);
+  const tMax = withTime.reduce((m, e) => Math.max(m, e.timestampMs), withTime[0].timestampMs);
   const span = Math.max(tMax - tMin, 1000);
   const bandMs = pickBandSize(span);
 
   const usableW = width - PAD_X * 2;
   const xForT = (ms: number) => PAD_X + ((ms - tMin) / span) * usableW;
 
+  // Detect RTC resets: track the running maximum timestamp in recording order.
+  // If an event's timestamp is more than 1 minute behind the running max it is
+  // almost certainly caused by a device reboot with a battery-less RTC — the
+  // clock restarted from a stale value. We flag those events so the renderer can
+  // annotate them, while still plotting them at the timestamp the device reported.
+  const CLOCK_RESET_THRESHOLD_MS = 60 * 1000;
+  let runningMax = withTime[0].timestampMs;
+  const annotated = withTime.map((e) => {
+    const clockReset = e.timestampMs < runningMax - CLOCK_RESET_THRESHOLD_MS;
+    if (!clockReset) runningMax = Math.max(runningMax, e.timestampMs);
+    return { ...e, clockReset };
+  });
+
   const bucketMs = span / BUCKET_COUNT;
-  const grouped = new Map<number, (LogEvent & { timestampMs: number })[]>();
-  withTime.forEach((e) => {
+  const grouped = new Map<number, (typeof annotated)[number][]>();
+  annotated.forEach((e) => {
     const bucket = Math.round((e.timestampMs - tMin) / bucketMs);
     const list = grouped.get(bucket) ?? [];
     list.push(e);
@@ -97,13 +130,19 @@ export function buildTimelineLayout(events: LogEvent[], width: number = WIDTH): 
     // so dots just overlap more tightly rather than escaping the visible timeline.
     const spacing = n > 1 ? Math.min(r + 3, MAX_BUCKET_SPREAD / (n - 1)) : 0;
     const dense = n > 1 && spacing < r;
-    items.forEach((event, i) => {
+    items.forEach((e, i) => {
       const offset = n > 1 ? (i - (n - 1) / 2) * spacing : 0;
-      dots.push({ x: cx + offset, y: LANE_Y, r, dense, event });
+      dots.push({ x: cx + offset, y: LANE_Y, r, dense, clockReset: e.clockReset, event: e });
     });
   });
 
-  return { tMin, tMax, span, bandMs, dots, xForT };
+  // Collect unique x-positions of clock-reset clusters (one marker per cluster,
+  // not per dot, so only one ⚠ appears when many events share the same bucket).
+  const resetXSet = new Set<number>();
+  dots.forEach((d) => { if (d.clockReset) resetXSet.add(Math.round(d.x)); });
+  const clockResetMarkers: ClockResetMarker[] = [...resetXSet].map((x) => ({ x }));
+
+  return { tMin, tMax, span, bandMs, dots, xForT, clockResetMarkers };
 }
 
 export const TIMELINE_WIDTH = WIDTH;

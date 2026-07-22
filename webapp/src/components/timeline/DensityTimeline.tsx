@@ -68,7 +68,7 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
 
   if (!layout || events.length < MIN_EVENTS_TO_SHOW) return null;
 
-  const { tMin, tMax, span, bandMs, dots, xForT } = layout;
+  const { tMin, tMax, span, bandMs, dots, xForT, clockResetMarkers } = layout;
 
   const bands: { x1: number; x2: number; shaded: boolean; label: string }[] = [];
   let idx = 0;
@@ -154,9 +154,48 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
           ))}
           <line x1={TIMELINE_PAD_X} y1={TIMELINE_LANE_Y} x2={width - TIMELINE_PAD_X} y2={TIMELINE_LANE_Y} stroke="var(--border-color)" strokeWidth={1} />
 
+          {/* RTC clock-reset markers — shown as dashed amber lines with a ⚠ label.
+               Each marker represents a cluster of events whose timestamp jumped
+               significantly backwards compared to the preceding recording sequence,
+               most likely caused by a device reboot with no battery-backed RTC. */}
+          {clockResetMarkers.map((m, i) => (
+            <g key={`rtc-${i}`} style={{ cursor: 'help' }}>
+              <title>
+                {'Possible RTC reset — these events have timestamps earlier than the preceding records.\n' +
+                  'This is typically caused by a device reboot where the real-time clock lost its setting.\n' +
+                  'The events are plotted at the time the device reported, which may not reflect actual occurrence.'}
+              </title>
+              {/* dashed vertical guide line */}
+              <line
+                x1={m.x} y1={TIMELINE_BAND_TOP_Y + 16}
+                x2={m.x} y2={TIMELINE_LANE_Y - 10}
+                stroke="#f59e0b"
+                strokeWidth={1.5}
+                strokeDasharray="3 3"
+              />
+              {/* amber warning badge circle */}
+              <circle cx={m.x} cy={TIMELINE_BAND_TOP_Y + 10} r={8} fill="#f59e0b" fillOpacity={0.15} stroke="#f59e0b" strokeWidth={1.5} />
+              {/* ⚠ glyph */}
+              <text
+                x={m.x}
+                y={TIMELINE_BAND_TOP_Y + 14}
+                fontSize={9}
+                textAnchor="middle"
+                fill="#f59e0b"
+                fontWeight="bold"
+                style={{ userSelect: 'none', pointerEvents: 'none' }}
+              >
+                ⚠
+              </text>
+            </g>
+          ))}
+
           {dots.map((d, i) => {
             const color = peColorMap.get(d.event.eventType);
             const dimmed = activeHighlights.size > 0 && !activeHighlights.has(d.event.eventType);
+            // Clock-reset dots get an amber ring so they stand out even when dimmed.
+            const stroke = d.clockReset ? '#f59e0b' : d.dense ? 'none' : 'var(--card-bg)';
+            const strokeWidth = d.clockReset ? 2 : d.dense ? 0 : 1.5;
             return (
               <circle
                 key={i}
@@ -165,14 +204,15 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, timeRang
                 r={d.r}
                 fill={color?.dot ?? '#8a8a86'}
                 fillOpacity={dimmed ? 0.2 : 0.9}
-                stroke={d.dense ? 'none' : 'var(--card-bg)'}
-                strokeWidth={d.dense ? 0 : 1.5}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
                 style={{ cursor: 'pointer' }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => onSelectIndex(d.event.index)}
               >
                 <title>
                   #{d.event.index} · {d.event.description} · {formatDate(d.event.timestampMs!)}
+                  {d.clockReset ? '\n⚠ Possible RTC reset — timestamp may be unreliable' : ''}
                 </title>
               </circle>
             );
