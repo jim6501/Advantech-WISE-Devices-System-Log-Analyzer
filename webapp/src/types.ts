@@ -42,6 +42,13 @@ export interface ColorSet {
   text: string;
 }
 
+export interface KeywordHighlight {
+  id: number;
+  keyword: string;
+  color: ColorSet;
+  active: boolean;
+}
+
 // Bounds are LogEvent.index values (recording-order sequence numbers), not timestamps.
 export interface IndexRange {
   start: number;

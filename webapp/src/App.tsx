@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Header } from './components/layout/Header';
 import { Dropzone } from './components/upload/Dropzone';
 import { FileTabs } from './components/upload/FileTabs';
@@ -7,6 +7,7 @@ import { UidPanel } from './components/sidebar/UidPanel';
 import { StatsPanel } from './components/sidebar/StatsPanel';
 import { ActionsPanel } from './components/sidebar/ActionsPanel';
 import { Legend } from './components/legend/Legend';
+import { KeywordHighlightBar } from './components/legend/KeywordHighlightBar';
 import { DensityTimeline } from './components/timeline/DensityTimeline';
 import { LogTable } from './components/table/LogTable';
 import { DisconnectionFlowModal } from './components/modal/DisconnectionFlowModal';
@@ -15,12 +16,14 @@ import { useSessions } from './hooks/useSessions';
 import { usePeColorMap } from './hooks/usePeColorMap';
 import { extractRawLogs } from './lib/normalizeLog';
 import { exportToCsv } from './lib/csvExport';
-import type { IndexRange, LogEvent, ProductSeries } from './types';
+import { buildKeywordSuggestions, PALETTE } from './lib/peColors';
+import type { IndexRange, KeywordHighlight, LogEvent, ProductSeries } from './types';
 
 function App() {
   const { sessions, activeSession, add, remove, setActive, reparseActive, clearAll } = useSessions();
 
   const [activeHighlights, setActiveHighlights] = useState<Set<LogEvent['eventType']>>(new Set());
+  const [keywordHighlights, setKeywordHighlights] = useState<KeywordHighlight[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [indexRange, setIndexRange] = useState<IndexRange | null>(null);
   const [showFlowModal, setShowFlowModal] = useState(false);
@@ -31,6 +34,7 @@ function App() {
   // one file never leak into another (spec 3.4).
   useEffect(() => {
     setActiveHighlights(new Set());
+    setKeywordHighlights([]);
     setSelectedIndex(null);
     setIndexRange(null);
   }, [activeSession?.id]);
@@ -47,6 +51,7 @@ function App() {
 
   const events = activeSession?.events ?? [];
   const peColorMap = usePeColorMap(events);
+  const keywordSuggestions = useMemo(() => buildKeywordSuggestions(events), [events]);
 
   function handleFiles(fileList: FileList) {
     Array.from(fileList).forEach((file) => {
@@ -71,6 +76,25 @@ function App() {
       else next.add(pe);
       return next;
     });
+  }
+
+  function addKeywordHighlight(keyword: string) {
+    const kw = keyword.trim();
+    if (!kw) return;
+    setKeywordHighlights((prev) => {
+      const existing = prev.find((h) => h.keyword.toLowerCase() === kw.toLowerCase());
+      if (existing) return prev.map((h) => (h.id === existing.id ? { ...h, active: true } : h));
+      const color = PALETTE[prev.length % PALETTE.length];
+      return [...prev, { id: Date.now(), keyword: kw, color, active: true }];
+    });
+  }
+
+  function toggleKeywordHighlight(id: number) {
+    setKeywordHighlights((prev) => prev.map((h) => (h.id === id ? { ...h, active: !h.active } : h)));
+  }
+
+  function removeKeywordHighlight(id: number) {
+    setKeywordHighlights((prev) => prev.filter((h) => h.id !== id));
   }
 
   function handleSeriesChange(series: ProductSeries) {
@@ -136,10 +160,18 @@ function App() {
           ) : (
             <>
               <Legend events={events} peColorMap={peColorMap} activeHighlights={activeHighlights} onToggle={toggleHighlight} />
+              <KeywordHighlightBar
+                highlights={keywordHighlights}
+                suggestions={keywordSuggestions}
+                onAdd={addKeywordHighlight}
+                onToggle={toggleKeywordHighlight}
+                onRemove={removeKeywordHighlight}
+              />
               <DensityTimeline
                 events={events}
                 peColorMap={peColorMap}
                 activeHighlights={activeHighlights}
+                keywordHighlights={keywordHighlights}
                 indexRange={indexRange}
                 onIndexRangeChange={setIndexRange}
                 onSelectIndex={setSelectedIndex}
@@ -148,9 +180,11 @@ function App() {
                 events={events}
                 peColorMap={peColorMap}
                 activeHighlights={activeHighlights}
+                keywordHighlights={keywordHighlights}
                 indexRange={indexRange}
                 selectedIndex={selectedIndex}
                 onSelectIndex={setSelectedIndex}
+                onHighlightValue={addKeywordHighlight}
               />
             </>
           )}

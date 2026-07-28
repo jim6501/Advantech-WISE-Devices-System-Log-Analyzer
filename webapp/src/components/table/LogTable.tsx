@@ -1,21 +1,32 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ColorSet, IndexRange, LogEvent } from '../../types';
-import { countByPe, isRare, OTHER_COLOR } from '../../lib/peColors';
+import type { ColorSet, IndexRange, KeywordHighlight, LogEvent } from '../../types';
+import { countByPe, extractHighlightLabel, hexToRgba, isRare, matchKeywordHighlight, OTHER_COLOR } from '../../lib/peColors';
 import { InfoTooltip } from './InfoTooltip';
 
 interface Props {
   events: LogEvent[];
   peColorMap: Map<LogEvent['eventType'], ColorSet>;
   activeHighlights: Set<LogEvent['eventType']>;
+  keywordHighlights: KeywordHighlight[];
   indexRange: IndexRange | null;
   selectedIndex: number | null;
   onSelectIndex: (index: number) => void;
+  onHighlightValue: (value: string) => void;
 }
 
 const ROW_HEIGHT = 36;
 
-export function LogTable({ events, peColorMap, activeHighlights, indexRange, selectedIndex, onSelectIndex }: Props) {
+export function LogTable({
+  events,
+  peColorMap,
+  activeHighlights,
+  keywordHighlights,
+  indexRange,
+  selectedIndex,
+  onSelectIndex,
+  onHighlightValue,
+}: Props) {
   const [search, setSearch] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState('all');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -85,6 +96,7 @@ export function LogTable({ events, peColorMap, activeHighlights, indexRange, sel
                 const rare = isRare(counts.get(e.eventType) ?? 0, total);
                 const dimmed = activeHighlights.size > 0 && !activeHighlights.has(e.eventType);
                 const selected = selectedIndex === e.index;
+                const keywordMatch = matchKeywordHighlight(e, keywordHighlights);
                 return (
                   <div
                     key={e.index}
@@ -98,6 +110,7 @@ export function LogTable({ events, peColorMap, activeHighlights, indexRange, sel
                       transform: `translateY(${vi.start}px)`,
                       borderLeft: `3px solid ${color.dot}`,
                       opacity: dimmed ? 0.35 : 1,
+                      background: keywordMatch ? hexToRgba(keywordMatch.color.dot, 0.28) : undefined,
                     }}
                     onClick={() => onSelectIndex(e.index)}
                   >
@@ -106,13 +119,37 @@ export function LogTable({ events, peColorMap, activeHighlights, indexRange, sel
                     <span className="col-pe" style={{ color: color.text }}>
                       {e.eventType}
                     </span>
-                    <span className="col-type" title={e.description}>
+                    <span
+                      className="col-type highlightable-cell"
+                      title={`${e.description} (right-click to highlight)`}
+                      onContextMenu={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        onHighlightValue(e.description);
+                      }}
+                    >
                       {e.description}
                     </span>
-                    <span className="col-desc" title={e.details}>
+                    <span
+                      className="col-desc highlightable-cell"
+                      title={`${e.details} (right-click to highlight "${extractHighlightLabel(e.details)}")`}
+                      onContextMenu={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        onHighlightValue(extractHighlightLabel(e.details));
+                      }}
+                    >
                       {e.details}
                     </span>
-                    <span className="col-raw" title={e.record}>
+                    <span
+                      className="col-raw highlightable-cell"
+                      title={`${e.record} (right-click to highlight "${extractHighlightLabel(e.record)}")`}
+                      onContextMenu={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        onHighlightValue(extractHighlightLabel(e.record));
+                      }}
+                    >
                       {e.record}
                     </span>
                     <span className="col-info">{e.info && <InfoTooltip text={e.info} />}</span>

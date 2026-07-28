@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ColorSet, IndexRange, LogEvent } from '../../types';
+import type { ColorSet, IndexRange, KeywordHighlight, LogEvent } from '../../types';
+import { matchKeywordHighlight } from '../../lib/peColors';
 import {
   buildTimelineLayout,
   formatBandLabel,
@@ -15,6 +16,7 @@ interface Props {
   events: LogEvent[];
   peColorMap: Map<LogEvent['eventType'], ColorSet>;
   activeHighlights: Set<LogEvent['eventType']>;
+  keywordHighlights: KeywordHighlight[];
   indexRange: IndexRange | null;
   onIndexRangeChange: (range: IndexRange | null) => void;
   onSelectIndex: (index: number) => void;
@@ -26,7 +28,7 @@ function formatDate(ms: number): string {
   return new Date(ms).toLocaleString();
 }
 
-export function DensityTimeline({ events, peColorMap, activeHighlights, indexRange, onIndexRangeChange, onSelectIndex }: Props) {
+export function DensityTimeline({ events, peColorMap, activeHighlights, keywordHighlights, indexRange, onIndexRangeChange, onSelectIndex }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ startX: number; curX: number } | null>(null);
   // Falls back to the logical TIMELINE_WIDTH until the first real measurement lands,
@@ -238,6 +240,28 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, indexRan
               </circle>
             );
           })}
+
+          {keywordHighlights.length > 0 &&
+            dots.map((d, i) => {
+              const match = matchKeywordHighlight(d.event, keywordHighlights);
+              if (!match) return null;
+              return (
+                <circle
+                  key={`kw-${i}`}
+                  cx={d.x}
+                  cy={TIMELINE_LANE_Y + 10}
+                  r={3}
+                  fill={match.color.dot}
+                  style={{ cursor: 'pointer' }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={() => onSelectIndex(d.event.index)}
+                >
+                  <title>
+                    Highlight "{match.keyword}" · #{d.event.index} · {d.event.description}
+                  </title>
+                </circle>
+              );
+            })}
 
           {previewRange && drag && (
             <rect

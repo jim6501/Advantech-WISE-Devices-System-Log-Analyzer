@@ -125,6 +125,7 @@ function CompareCard({ session }: { session: Session }) {
         events={session.events}
         peColorMap={peColorMap}
         activeHighlights={activeHighlights}
+        keywordHighlights={[]}
         indexRange={indexRange}
         onIndexRangeChange={setIndexRange}
         onSelectIndex={() => {}}
