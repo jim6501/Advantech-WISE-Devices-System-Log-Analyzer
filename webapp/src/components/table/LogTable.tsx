@@ -109,7 +109,7 @@ export function LogTable({
                       height: vi.size,
                       transform: `translateY(${vi.start}px)`,
                       borderLeft: `3px solid ${color.dot}`,
-                      opacity: dimmed ? 0.35 : 1,
+                      opacity: dimmed ? 0.6 : 1,
                       background: keywordMatch ? hexToRgba(keywordMatch.color.dot, 0.28) : undefined,
                     }}
                     onClick={() => onSelectIndex(e.index)}

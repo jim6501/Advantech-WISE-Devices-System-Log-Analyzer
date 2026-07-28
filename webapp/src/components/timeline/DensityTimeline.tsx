@@ -226,7 +226,7 @@ export function DensityTimeline({ events, peColorMap, activeHighlights, keywordH
                 cy={d.y}
                 r={d.r}
                 fill={color?.dot ?? '#8a8a86'}
-                fillOpacity={dimmed ? 0.2 : 0.9}
+                fillOpacity={dimmed ? 0.45 : 0.9}
                 stroke={d.dense ? 'none' : 'var(--card-bg)'}
                 strokeWidth={d.dense ? 0 : 1.5}
                 style={{ cursor: 'pointer' }}
