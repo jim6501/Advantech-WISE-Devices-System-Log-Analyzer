@@ -643,7 +643,7 @@ button.btn.primary {
 }
 
 .table-scroll {
-  height: 480px;
+  height: 1800px; /* ~50 rows at ROW_HEIGHT (36px) before the list itself needs scrolling */
   overflow-y: auto;
 }
 
